@@ -1,0 +1,52 @@
+================================================================================
+          ADMIN EMAIL UPDATED SUCCESSFULLY
+================================================================================
+
+✅ All references to admin email have been updated!
+
+OLD EMAIL: habitamuersado2024@wcu.edu.et
+NEW EMAIL: habtamuhailemichael8@gmail.com
+
+================================================================================
+FILES UPDATED:
+================================================================================
+
+1. ✅ INSTITUTIONAL_EMAIL_SETUP.txt
+   - Updated all references to new Gmail address
+
+2. ✅ server/.env file
+   - EMAIL_USER is already set to: habtamuhailemichael8@gmail.com
+   - EMAIL_PASSWORD is set to your App Password
+
+================================================================================
+WHAT THIS MEANS:
+================================================================================
+
+Now all emails sent from the system will come FROM:
+→ habtamuhailemichael8@gmail.com
+
+This includes:
+✅ OTP emails for voting
+✅ Contact form reply emails
+✅ All automated system emails
+
+================================================================================
+CURRENT EMAIL CONFIGURATION:
+================================================================================
+
+EMAIL_SERVICE=gmail
+EMAIL_USER=habtamuhailemichael8@gmail.com
+EMAIL_PASSWORD=mjexcaevnstjwzfd (App Password)
+
+================================================================================
+NO ACTION NEEDED:
+================================================================================
+
+The .env file is already configured correctly.
+Just restart your server and test!
+
+cd server
+npm start
+
+================================================================================
+
