@@ -136,7 +136,7 @@ const EditProfile = () => {
 
             // Determine which endpoint and data to use based on role
             const isCandidate = userRole === 'candidate';
-            
+
             // Prepare update data
             const updateData = {
                 name: formData.name,
@@ -166,10 +166,10 @@ const EditProfile = () => {
             }
 
             // Update profile using appropriate endpoint
-            const endpoint = isCandidate 
+            const endpoint = isCandidate
                 ? `${BASE_URL}/updateCandidate/${voterId}`
                 : `${BASE_URL}/updateVoter/${voterId}`;
-            
+
             const response = await axios.patch(endpoint, updateData);
 
             if (response.data.success) {
@@ -243,38 +243,38 @@ const EditProfile = () => {
                             <form onSubmit={handleSubmit} className="register-form" id="register-form">
                                 <div className="form-group">
                                     <label htmlFor="name"></label>
-                                    <input 
-                                        type="text" 
-                                        name="name" 
-                                        id="name" 
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        id="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        placeholder="Your Name" 
-                                        required 
+                                        placeholder="Your Name"
+                                        required
                                     />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="voterId"></label>
-                                    <input 
-                                        type="text" 
-                                        name="voterId" 
-                                        id="voterId" 
+                                    <input
+                                        type="text"
+                                        name="voterId"
+                                        id="voterId"
                                         value={formData.voterId}
                                         onChange={handleChange}
-                                        placeholder="Your Student ID (e.g., WCU1234567)" 
-                                        required 
+                                        placeholder="Your Student ID (e.g., WCU1234567)"
+                                        required
                                     />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="email"></label>
-                                    <input 
-                                        type="email" 
-                                        name="email" 
-                                        id="email" 
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        id="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="Your Gmail Address (e.g., yourname@gmail.com)" 
-                                        required 
+                                        placeholder="Your Gmail Address (e.g., yourname@gmail.com)"
+                                        required
                                     />
                                 </div>
                                 {userRole === 'candidate' && (
@@ -292,23 +292,23 @@ const EditProfile = () => {
                                         )}
                                         <div className="form-group">
                                             <label htmlFor="party"></label>
-                                            <input 
-                                                type="text" 
-                                                name="party" 
-                                                id="party" 
+                                            <input
+                                                type="text"
+                                                name="party"
+                                                id="party"
                                                 value={formData.party}
                                                 onChange={handleChange}
-                                                placeholder="Department/Party (e.g., Computer Science)" 
+                                                placeholder="Department/Party (e.g., Computer Science)"
                                             />
                                         </div>
                                         <div className="form-group">
                                             <label htmlFor="bio"></label>
-                                            <textarea 
-                                                name="bio" 
-                                                id="bio" 
+                                            <textarea
+                                                name="bio"
+                                                id="bio"
                                                 value={formData.bio}
                                                 onChange={handleChange}
-                                                placeholder="Your Candidate Bio/Manifesto" 
+                                                placeholder="Your Candidate Bio/Manifesto"
                                                 rows="4"
                                                 style={{
                                                     width: '100%',
@@ -322,13 +322,13 @@ const EditProfile = () => {
                                         </div>
                                         <div className="form-group">
                                             <label htmlFor="cgpa"></label>
-                                            <input 
-                                                type="number" 
-                                                name="cgpa" 
-                                                id="cgpa" 
+                                            <input
+                                                type="number"
+                                                name="cgpa"
+                                                id="cgpa"
                                                 value={formData.cgpa}
                                                 onChange={handleChange}
-                                                placeholder="CGPA (e.g., 3.5)" 
+                                                placeholder="CGPA (e.g., 3.5)"
                                                 min="0"
                                                 max="4.0"
                                                 step="0.01"
@@ -338,35 +338,35 @@ const EditProfile = () => {
                                 )}
                                 <div className="form-group">
                                     <label htmlFor="pass"></label>
-                                    <input 
-                                        type="password" 
-                                        name="pass" 
-                                        id="pass" 
+                                    <input
+                                        type="password"
+                                        name="pass"
+                                        id="pass"
                                         value={formData.pass}
                                         onChange={handleChange}
-                                        placeholder="New Password (leave blank to keep current)" 
+                                        placeholder="New Password (leave blank to keep current)"
                                         autoComplete="new-password"
                                     />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="re_pass"></label>
-                                    <input 
-                                        type="password" 
-                                        name="re_pass" 
-                                        id="re_pass" 
+                                    <input
+                                        type="password"
+                                        name="re_pass"
+                                        id="re_pass"
                                         value={formData.re_pass}
                                         onChange={handleChange}
-                                        placeholder="Repeat new password" 
+                                        placeholder="Repeat new password"
                                         autoComplete="new-password"
                                     />
                                 </div>
                                 <div className="form-group form-button">
-                                    <button 
-                                        type="submit" 
-                                        className="form-submit" 
+                                    <button
+                                        type="submit"
+                                        className="form-submit"
                                         disabled={loading}
-                                        style={{ 
-                                            width: '100%', 
+                                        style={{
+                                            width: '100%',
                                             padding: '12px',
                                             cursor: loading ? 'not-allowed' : 'pointer',
                                             opacity: loading ? 0.7 : 1

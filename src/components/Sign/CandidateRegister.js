@@ -8,6 +8,7 @@ import axios from "axios"
 import { BASE_URL } from "../../helper";
 import { useNavigate, Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
+import Nav_bar from "../Navbar/Navbar";
 
 const CandidateRegister = () => {
     const [loading, setLoading] = useState(false);
@@ -15,13 +16,15 @@ const CandidateRegister = () => {
     const [userId, setUserId] = useState(null);
     const [userInfo, setUserInfo] = useState(null);
     const [loadingUserInfo, setLoadingUserInfo] = useState(true);
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [successText, setSuccessText] = useState("");
 
     const navigate = useNavigate();
-    const CreationSuccess = () => toast.success("Candidate registration submitted! Waiting for admin approval.", {
+    const CreationSuccess = () => toast.success("Request successful. Candidate registration submitted! Waiting for admin approval.", {
         // position: toast.POSITION.TOP_CENTER,
         className: "toast-message",
     });
-    const CreationFailed = (message) => toast.error(message || "Invalid Details \n Please Try Again!",{
+    const CreationFailed = (message) => toast.error(message || "Invalid Details \n Please Try Again!", {
         // position: toast.POSITION.TOP_CENTER,
         className: "toast-message",
     });
@@ -32,7 +35,7 @@ const CandidateRegister = () => {
         if (voterId) {
             setIsLoggedIn(true);
             setUserId(voterId);
-            
+
             // Fetch user information from registration
             const fetchUserInfo = async () => {
                 try {
@@ -54,7 +57,6 @@ const CandidateRegister = () => {
 
 
     const [formData, setFormData] = useState({
-        cgpa: '',
         bio: '',
         image: null,
         symbol: null,
@@ -88,13 +90,7 @@ const CandidateRegister = () => {
             return;
         }
 
-        // Validate CGPA requirement (minimum 2.75)
-        const cgpaValue = parseFloat(formData.cgpa);
-        if (!formData.cgpa || isNaN(cgpaValue) || cgpaValue < 2.75) {
-            CreationFailed('CGPA must be at least 2.75 to register as a candidate');
-            setLoading(false);
-            return;
-        }
+        // CGPA validation removed - no longer required
 
         // Position will be automatically assigned based on vote totals after election ends
         // No need to validate position selection
@@ -117,11 +113,11 @@ const CandidateRegister = () => {
         formDataToSend.append('fullName', userInfo.name || ''); // Use name from user registration
         formDataToSend.append('party', userInfo.department || ''); // Use department from user registration
         formDataToSend.append('bio', formData.bio);
-        formDataToSend.append('cgpa', formData.cgpa);
+        // CGPA field removed - no longer required
         // Position will be auto-assigned after election based on vote totals
         // formDataToSend.append('position', formData.position);
         formDataToSend.append('userId', userId);
-        
+
         // Add files if provided
         if (formData.image) {
             formDataToSend.append('image', formData.image);
@@ -140,8 +136,10 @@ const CandidateRegister = () => {
             });
             if (response.data.success) {
                 CreationSuccess();
+                setSubmitSuccess(true);
+                setSuccessText("Request successful. Your application has been sent and awaits admin approval.");
                 setTimeout(() => {
-                     navigate('/User');
+                    navigate('/User');
                 }, 2000)
             }
             else {
@@ -155,12 +153,13 @@ const CandidateRegister = () => {
         }
         finally {
             setLoading(false);
-          }
+        }
     };
 
 
     return (
         <div >
+            <Nav_bar />
             <section className="Candidatesignup">
                 <div className="FormTitle">
                     <h2>Register as Candidate</h2>
@@ -178,7 +177,13 @@ const CandidateRegister = () => {
                 <div className="container">
                     <div className="signup-content">
                         <div className="signup-form">
-                        <ToastContainer />
+                            <ToastContainer />
+                            {submitSuccess && (
+                                <div style={{ padding: '12px', marginBottom: '16px', backgroundColor: '#e9f7ef', border: '1px solid #28a745', borderRadius: '5px', color: '#1e7e34' }}>
+                                    <h4 style={{ margin: 0, marginBottom: '6px', fontSize: '16px' }}>Request Successful</h4>
+                                    <p style={{ margin: 0, fontSize: '14px' }}>{successText}</p>
+                                </div>
+                            )}
 
                             <form method="POST" enctype="multipart/form-data" className="register-form" id="register-form">
                                 {isLoggedIn && (
@@ -208,11 +213,7 @@ const CandidateRegister = () => {
                                         <strong>Position Assignment:</strong> Positions will be automatically assigned after the election ends based on the total number of votes you receive. The candidate with the highest votes becomes President, 2nd highest becomes Vice President, and so on.
                                     </p>
                                 </div>
-                                <div className="form-group">
-                                    <label for="cgpa"></label>
-                                    <input type="number" name="cgpa" id="cgpa" value={formData.cgpa} onChange={handleChange} placeholder="Your CGPA - Minimum: 2.75" step="0.01" min="2.75" max="4.0" required />
-                                    <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>Minimum CGPA required: 2.75</small>
-                                </div>
+                                {/* CGPA field removed - no longer required */}
                                 <div className="form-group">
                                     <label for="bio"></label>
                                     <textarea name="bio" id="bio" value={formData.bio} onChange={handleChange} placeholder="Candidate Bio (brief description)" rows="3" style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }}></textarea>

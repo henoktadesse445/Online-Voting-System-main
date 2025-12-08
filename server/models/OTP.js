@@ -24,6 +24,10 @@ const otpSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isPreElectionOTP: {
+    type: Boolean,
+    default: false, // Marks OTPs sent before election for first-time login
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -32,6 +36,10 @@ const otpSchema = new mongoose.Schema({
 
 // Index to ensure one active OTP per voter (not used)
 otpSchema.index({ voterId: 1, used: 1 });
+
+// 🚀 Performance Optimization: Additional indexes for OTP queries
+otpSchema.index({ voterId: 1, used: 1, expiresAt: 1 }); // Compound index for OTP validation
+otpSchema.index({ email: 1 }); // Index for email lookups
 
 module.exports = mongoose.model("OTP", otpSchema);
 

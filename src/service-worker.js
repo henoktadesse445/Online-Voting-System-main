@@ -46,11 +46,37 @@ registerRoute(
     createHandlerBoundToURL(process.env.PUBLIC_URL + '/index.html')
 );
 
+// ⚡ Performance Optimization: Cache fonts, styles, and scripts
+registerRoute(
+    ({ url }) => url.origin === self.location.origin &&
+        (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.woff2')),
+    new StaleWhileRevalidate({
+        cacheName: 'static-resources',
+        plugins: [
+            new ExpirationPlugin({ maxEntries: 50 }),
+        ],
+    })
+);
+
+// ⚡ Performance Optimization: Cache API responses (e.g., voting settings)
+registerRoute(
+    ({ url }) => url.pathname.includes('/api/votingSettings'),
+    new StaleWhileRevalidate({
+        cacheName: 'api-cache',
+        plugins: [
+            new ExpirationPlugin({
+                maxEntries: 10,
+                maxAgeSeconds: 5 * 60 // 5 minutes
+            }),
+        ],
+    })
+);
+
 // An example runtime caching route for requests that aren't handled by the
 // precache, in this case same-origin .png requests like those from in public/
 registerRoute(
     // Add in any other file extensions or routing criteria as needed.
-    ({ url }) => url.origin === self.location.origin && url.pathname.endsWith('.png'), // Customize this strategy as needed, e.g., by changing to CacheFirst.
+    ({ url }) => url.origin === self.location.origin && /\.(png|jpg|jpeg|svg|gif)$/.test(url.pathname),
     new StaleWhileRevalidate({
         cacheName: 'images',
         plugins: [

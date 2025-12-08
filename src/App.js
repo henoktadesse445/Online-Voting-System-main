@@ -1,11 +1,11 @@
 import React, { Suspense, lazy } from 'react';
-import {BrowserRouter,Route,Routes,Navigate} from 'react-router-dom';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import './App.css';
 const Home = lazy(() => import('./components/Home/Home'));
 const AdminLogin = lazy(() => import('./components/Sign/AdminLogin'));
 const Login = lazy(() => import('./components/Sign/Login'));
 const User = lazy(() => import('./components/User/User'));
-const Signup = lazy(() => import('./components/Sign/Signup'));
+// const Signup = lazy(() => import('./components/Sign/Signup')); // DISABLED - User registration removed
 const NewVoters = lazy(() => import('./components/NewDashboard/scenes/voters/NewVoters'));
 const Vote = lazy(() => import('./components/User/Components/Voter/Vote'));
 const EditProfile = lazy(() => import('./components/User/Components/EditProfile/EditProfile'));
@@ -22,43 +22,63 @@ const PendingCandidates = lazy(() => import('./components/NewDashboard/scenes/ca
 const CandidateRegister = lazy(() => import('./components/Sign/CandidateRegister'));
 const StudentListUpload = lazy(() => import('./components/NewDashboard/scenes/students/StudentListUpload'));
 const StudentListInfo = lazy(() => import('./components/NewDashboard/scenes/students/StudentListInfo'));
+const VotingReport = lazy(() => import('./components/NewDashboard/scenes/report/VotingReport'));
+const OTPDistribution = lazy(() => import('./components/NewDashboard/scenes/otp/OTPDistribution'));
 
-const Routing = ()=>{
+const Routing = () => {
 
-  return(
-    <Suspense fallback={<div style={{padding:'20px',textAlign:'center'}}>Loading...</div>}>
-    <Routes>
-      <Route exact path="/" element = {<Home />} />
-      <Route path='/Signup' element = {<Signup/>} />
-      <Route path="/Login" element = {<Login/>} />
-      <Route path="/AdminLogin" element = {<AdminLogin/>} />
-      <Route path="/Admin" element = {<New/>} />
-      <Route path="/LineChart" element = {<Line/>} />
-      <Route path="/BarChart" element = {<Result/>} />
-      <Route path="/PieChart" element = {<Pie/>} />
-      <Route path="/Voters" element = {<NewVoters/>} />
-      <Route path="/Candidate" element = {<NewCandidates/>} />
-      <Route path="/calendar" element ={<Calendar/>} />
-      <Route path="/Edit" element ={<EditProfile/>} />
-      <Route path="/User" element = {<User/>} />
-      <Route path="/Vote" element = {<Vote/>} />
-      <Route path="/Results" element = {<ElectionResults/>} />
-      <Route path="/contacts" element = {<ContactMessages/>}/>
-      <Route path="/votingSettings" element = {<VotingSettings/>}/>
-      <Route path="/pendingCandidates" element = {<PendingCandidates/>}/>
-      <Route path="/registerCandidate" element = {<CandidateRegister/>}/>
-      <Route path="/studentListUpload" element = {<StudentListUpload/>}/>
-      <Route path="/studentListInfo" element = {<StudentListInfo/>}/>
-      <Route path="/upcoming" element = {<Navigate to="/votingSettings" replace />}/>
-    </Routes>
+  return (
+    <Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>}>
+      <Routes>
+        <Route exact path="/" element={<Home />} />
+        {/* <Route path='/Signup' element = {<Signup/>} /> */} {/* DISABLED - User registration removed */}
+        <Route path="/Login" element={<Login />} />
+        <Route path="/AdminLogin" element={<AdminLogin />} />
+        <Route path="/Admin" element={<New />} />
+        <Route path="/LineChart" element={<Line />} />
+        <Route path="/BarChart" element={<Result />} />
+        <Route path="/PieChart" element={<Pie />} />
+        <Route path="/Voters" element={<NewVoters />} />
+        <Route path="/Candidate" element={<NewCandidates />} />
+        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/Edit" element={<EditProfile />} />
+        <Route path="/User" element={<User />} />
+        <Route path="/Vote" element={<Vote />} />
+        <Route path="/Results" element={<ElectionResults />} />
+        <Route path="/contacts" element={<ContactMessages />} />
+        <Route path="/votingSettings" element={<VotingSettings />} />
+        <Route path="/pendingCandidates" element={<PendingCandidates />} />
+        <Route path="/registerCandidate" element={<CandidateRegister />} />
+        <Route path="/studentListUpload" element={<StudentListUpload />} />
+        <Route path="/studentListInfo" element={<StudentListInfo />} />
+        <Route path="/votingReport" element={<VotingReport />} />
+        <Route path="/otpDistribution" element={<OTPDistribution />} />
+        <Route path="/upcoming" element={<Navigate to="/votingSettings" replace />} />
+      </Routes>
     </Suspense>
   )
 }
 
 function App() {
+  // ⚡ Performance Optimization: Prefetch common routes on idle
+  React.useEffect(() => {
+    const prefetchRoutes = () => {
+      // Prefetch commonly accessed routes
+      import('./components/Sign/Login');
+      import('./components/Home/Home');
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(prefetchRoutes, { timeout: 2000 });
+    } else {
+      // Fallback for browsers that don't support requestIdleCallback
+      setTimeout(prefetchRoutes, 1000);
+    }
+  }, []);
+
   return (
     <BrowserRouter>
-      <Routing />      
+      <Routing />
     </BrowserRouter>
   );
 }

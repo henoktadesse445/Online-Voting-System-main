@@ -20,6 +20,15 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true, // Allows null values but ensures uniqueness when present
   },
+  voteId: {
+    type: String,
+    unique: true,
+    sparse: true, // Unique Vote ID generated during OTP verification
+  },
+  firstLoginCompleted: {
+    type: Boolean,
+    default: false, // Tracks if user has completed first-time login with pre-sent OTP
+  },
   college: {
     type: String,
   },
@@ -93,5 +102,12 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt fields
 });
+
+// 🚀 Performance Optimization: Add indexes for frequently queried fields
+userSchema.index({ email: 1 }); // Index for email lookups
+userSchema.index({ voterId: 1 }); // Index for student ID lookups
+userSchema.index({ role: 1, approvalStatus: 1 }); // Compound index for role-based queries
+userSchema.index({ voteStatus: 1 }); // Index for vote status checks
+userSchema.index({ voteId: 1 }); // Index for Vote ID lookups
 
 module.exports = mongoose.model("User", userSchema);

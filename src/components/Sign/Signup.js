@@ -37,8 +37,6 @@ export default function Signup() {
     });
     const [loading, setLoading] = useState(false);
     const [age, setAge] = useState();
-    const [registrationType, setRegistrationType] = useState('voter'); // 'voter' or 'candidate'
-    const [showEligibilityInfo, setShowEligibilityInfo] = useState(true);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -47,13 +45,7 @@ export default function Signup() {
         studentId: '',
         email: '',
         pass: '',
-        re_pass: '',
-        // Candidate-specific fields
-        bio: '',
-        cgpa: '',
-        image: null,
-        symbol: null,
-        authenticatedDocument: null
+        re_pass: ''
     });
 
     function calculateAge(dateOfBirth) {
@@ -106,13 +98,7 @@ export default function Signup() {
         });
     };
 
-    const handleFileChange = (e) => {
-        const { name, files } = e.target;
-        setFormData({
-            ...formData,
-            [name]: files[0]
-        });
-    };
+
 
     const departments = collegeDepartmentMapping[formData.college] || [];
 
@@ -167,66 +153,10 @@ export default function Signup() {
                 return;
             }
 
-            // If registering as candidate, now create candidate profile
-            if (registrationType === 'candidate') {
-                if (!formData.bio) {
-                    alert('Please fill in the Bio field for candidate registration');
-                    setLoading(false);
-                    return;
-                }
-
-                // Validate CGPA requirement (minimum 2.75)
-                const cgpaValue = parseFloat(formData.cgpa);
-                if (isNaN(cgpaValue) || cgpaValue < 2.75) {
-                    alert('CGPA must be at least 2.75 to register as a candidate');
-                    setLoading(false);
-                    return;
-                }
-
-                // Validate authenticated document is required
-                if (!formData.authenticatedDocument) {
-                    alert('Authenticated document is required. Please upload a verified document proving you are a class representative.');
-                    setLoading(false);
-                    return;
-                }
-
-
-                const candidateFormData = new FormData();
-                candidateFormData.append('fullName', `${formData.firstName} ${formData.lastName}`);
-                // Use department from registration form as party field
-                candidateFormData.append('party', formData.department);
-                candidateFormData.append('bio', formData.bio);
-                candidateFormData.append('age', formData.cgpa); // Using cgpa value for age field (backend compatibility)
-                candidateFormData.append('userId', voterResponse.data.userId);
-
-                // Add files if provided
-                if (formData.image) {
-                    candidateFormData.append('image', formData.image);
-                }
-                if (formData.symbol) {
-                    candidateFormData.append('symbol', formData.symbol);
-                }
-                // Add authenticated document (required)
-                candidateFormData.append('authenticatedDocument', formData.authenticatedDocument);
-
-                response = await axios.post(`${BASE_URL}/createCandidate`, candidateFormData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-            } else {
-                // Regular voter registration - already done
-                response = voterResponse;
-            }
+            response = voterResponse;
 
             if (response.data.success) {
-                if (registrationType === 'candidate') {
-                    toast.success("Candidate registration submitted successfully! Your application is pending admin approval. Redirecting to Login...", {
-                        className: "toast-message",
-                    });
-                } else {
-                    signSuccess();
-                }
+                signSuccess();
                 setTimeout(() => {
                     navigate('/Login');
                 }, 2000)
@@ -305,209 +235,9 @@ export default function Signup() {
                                     <input type="password" name="re_pass" id="re_pass" value={formData.re_pass} onChange={handleChange} placeholder="Repeat your password" autoComplete="new-password" required />
                                 </div>
 
-                                {/* Candidate-specific fields - only show if registering as candidate */}
-                                {registrationType === 'candidate' && (
-                                    <>
-                                        <div style={{ margin: '20px 0', padding: '10px', borderTop: '2px solid #ddd', borderBottom: '2px solid #ddd' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                                <h3 style={{ margin: 0, fontSize: '18px' }}>Candidate Information</h3>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowEligibilityInfo(!showEligibilityInfo)}
-                                                    style={{
-                                                        padding: '6px 12px',
-                                                        backgroundColor: '#fff3cd',
-                                                        border: '1px solid #ffc107',
-                                                        borderRadius: '5px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '12px',
-                                                        color: '#856404',
-                                                        fontWeight: 'bold',
-                                                        transition: 'all 0.2s ease'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#ffe082';
-                                                        e.currentTarget.style.transform = 'scale(1.05)';
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#fff3cd';
-                                                        e.currentTarget.style.transform = 'scale(1)';
-                                                    }}
-                                                >
-                                                    {showEligibilityInfo ? 'Hide' : 'Show'} Requirements
-                                                </button>
-                                            </div>
-                                            {showEligibilityInfo && (
-                                                <div style={{
-                                                    marginBottom: '15px',
-                                                    padding: '15px',
-                                                    backgroundColor: '#fff3cd',
-                                                    borderRadius: '8px',
-                                                    borderLeft: '4px solid #ffc107',
-                                                    fontSize: '14px',
-                                                    color: '#856404',
-                                                    animation: 'fadeIn 0.3s ease-in',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}>
-                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                                        <div>
-                                                            <strong style={{ display: 'block', marginBottom: '8px' }}>Eligibility Requirement:</strong>
-                                                            <p style={{ margin: 0, lineHeight: '1.6' }}>
-                                                                Only class representatives are eligible to register as candidates. You must upload an authenticated document from the head office verifying your status as a class representative. This document will be reviewed by administrators during the approval process.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="form-group">
-                                            <label for="cgpa"></label>
-                                            <input type="number" name="cgpa" id="cgpa" value={formData.cgpa} onChange={handleChange} placeholder="Your CGPA - Minimum: 2.75" step="0.01" min="2.75" max="4.0" required={registrationType === 'candidate'} />
-                                            <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>Minimum CGPA required: 2.75</small>
-                                        </div>
-                                        <div className="form-group">
-                                            <label for="bio"></label>
-                                            <textarea name="bio" id="bio" value={formData.bio} onChange={handleChange} placeholder="Candidate Bio (brief description)" rows="3" required={registrationType === 'candidate'} style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }}></textarea>
-                                        </div>
-                                        <div className="form-group">
-                                            <label for="image"></label>
-                                            <input type="file" name="image" id="image" onChange={handleFileChange} accept="image/*" />
-                                            <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>(Optional) Upload your profile photo (Image file)</small>
-                                        </div>
-                                        <div className="form-group">
-                                            <label for="symbol"></label>
-                                            <input type="file" name="symbol" id="symbol" onChange={handleFileChange} accept="image/*,.pdf,.doc,.docx" />
-                                            <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>(Optional) Upload your proposal document (PDF, DOC, DOCX, or Image)</small>
-                                        </div>
-                                        <div className="form-group">
-                                            <label for="authenticatedDocument"></label>
-                                            <input type="file" name="authenticatedDocument" id="authenticatedDocument" onChange={handleFileChange} accept="image/*,.pdf" required />
-                                            <small style={{ display: 'block', marginTop: '5px', color: '#d32f2f', fontSize: '12px' }}>(Required) Upload your verified document proving you are a class representative (PDF or Image)</small>
-                                        </div>
-                                    </>
-                                )}
 
-                                {/* Registration Type Selection - At the bottom, right side */}
-                                <div className="form-group" style={{
-                                    marginTop: '25px',
-                                    marginBottom: '15px',
-                                    padding: '20px',
-                                    backgroundColor: '#f8f9fa',
-                                    borderRadius: '10px',
-                                    border: '2px solid #e0e0e0',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-end',
-                                    transition: 'all 0.3s ease'
-                                }}>
-                                    <label style={{
-                                        marginBottom: '15px',
-                                        fontWeight: 'bold',
-                                        fontSize: '16px',
-                                        color: '#333',
-                                        alignSelf: 'flex-start',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px'
-                                    }}>
-                                        <i className="zmdi zmdi-account-circle material-icons-name" style={{ fontSize: '20px', color: '#2196F3' }}></i>
-                                        <span>Register as:</span>
-                                    </label>
-                                    <div style={{
-                                        display: 'flex',
-                                        gap: '12px',
-                                        alignSelf: 'flex-end',
-                                        flexWrap: 'wrap'
-                                    }}>
-                                        <label
-                                            onClick={() => setRegistrationType('voter')}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                cursor: 'pointer',
-                                                padding: '12px 20px',
-                                                borderRadius: '8px',
-                                                border: registrationType === 'voter' ? '2px solid #4CAF50' : '2px solid #ddd',
-                                                backgroundColor: registrationType === 'voter' ? '#e8f5e9' : '#fff',
-                                                transition: 'all 0.3s ease',
-                                                fontWeight: registrationType === 'voter' ? '600' : '400',
-                                                boxShadow: registrationType === 'voter' ? '0 2px 6px rgba(76, 175, 80, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (registrationType !== 'voter') {
-                                                    e.currentTarget.style.backgroundColor = '#f5f5f5';
-                                                    e.currentTarget.style.borderColor = '#4CAF50';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (registrationType !== 'voter') {
-                                                    e.currentTarget.style.backgroundColor = '#fff';
-                                                    e.currentTarget.style.borderColor = '#ddd';
-                                                }
-                                            }}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="registrationType"
-                                                value="voter"
-                                                checked={registrationType === 'voter'}
-                                                onChange={(e) => setRegistrationType(e.target.value)}
-                                                style={{
-                                                    marginRight: '10px',
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    cursor: 'pointer',
-                                                    accentColor: '#4CAF50'
-                                                }}
-                                            />
-                                            <span style={{ fontSize: '15px', userSelect: 'none' }}>Voter</span>
-                                        </label>
-                                        <label
-                                            onClick={() => setRegistrationType('candidate')}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                cursor: 'pointer',
-                                                padding: '12px 20px',
-                                                borderRadius: '8px',
-                                                border: registrationType === 'candidate' ? '2px solid #FF9800' : '2px solid #ddd',
-                                                backgroundColor: registrationType === 'candidate' ? '#fff3e0' : '#fff',
-                                                transition: 'all 0.3s ease',
-                                                fontWeight: registrationType === 'candidate' ? '600' : '400',
-                                                boxShadow: registrationType === 'candidate' ? '0 2px 6px rgba(255, 152, 0, 0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (registrationType !== 'candidate') {
-                                                    e.currentTarget.style.backgroundColor = '#fff9e6';
-                                                    e.currentTarget.style.borderColor = '#FF9800';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (registrationType !== 'candidate') {
-                                                    e.currentTarget.style.backgroundColor = '#fff';
-                                                    e.currentTarget.style.borderColor = '#ddd';
-                                                }
-                                            }}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="registrationType"
-                                                value="candidate"
-                                                checked={registrationType === 'candidate'}
-                                                onChange={(e) => setRegistrationType(e.target.value)}
-                                                style={{
-                                                    marginRight: '10px',
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    cursor: 'pointer',
-                                                    accentColor: '#FF9800'
-                                                }}
-                                            />
-                                            <span style={{ fontSize: '15px', userSelect: 'none' }}>Candidate</span>
-                                        </label>
-                                    </div>
-                                </div>
+
+
 
                                 <div className="form-group form-button">
                                     {/* <input type="submit" name="signup" id="signup" className="form-submit" value="Submit" /> */}

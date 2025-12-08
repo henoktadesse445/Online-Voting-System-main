@@ -17,6 +17,8 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
     const theme = useTheme();
@@ -43,14 +45,14 @@ const Sidebar = () => {
     return (
         <Box display="inline-flex"
             sx={{
-                "& .pro-sidebar":{
-                    width:"240px",
-                    minWidth:"240px"
+                "& .pro-sidebar": {
+                    width: "240px",
+                    minWidth: "240px"
                 },
-                "& .pro-item-content p":{
-                    color:colors.grey[100]
+                "& .pro-item-content p": {
+                    color: colors.grey[100]
                 },
-                "& .pro-item-content:hover":{
+                "& .pro-item-content:hover": {
                     color: "#868dfb",
                 },
                 "& .pro-sidebar-inner": {
@@ -61,7 +63,7 @@ const Sidebar = () => {
                 },
                 "& .pro-inner-item": {
                     padding: "5px 3px 5px 20px !important",
-                    width:"100%",
+                    width: "100%",
                 },
                 "& .pro-inner-item:hover": {
                     color: "#868dfb !important",
@@ -69,7 +71,7 @@ const Sidebar = () => {
                 "& .pro-menu-item.active": {
                     color: "#6870fa !important",
                 },
-                position:"relative",
+                position: "relative",
             }}
         >
             <ProSidebar collapsed={isCollapsed}>
@@ -98,7 +100,7 @@ const Sidebar = () => {
                         )}
                     </MenuItem>
 
-                    
+
 
                     <Box paddingLeft={isCollapsed ? undefined : "1%"}>
                         <Item
@@ -181,6 +183,13 @@ const Sidebar = () => {
                             selected={selected}
                             setSelected={setSelected}
                         />
+                        <Item
+                            title="OTP Distribution"
+                            to="/otpDistribution"
+                            icon={<VpnKeyOutlinedIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
 
                         <Typography
                             variant="h6"
@@ -193,6 +202,13 @@ const Sidebar = () => {
                             title="Bar Chart"
                             to="/BarChart"
                             icon={<BarChartOutlinedIcon />}
+                            selected={selected}
+                            setSelected={setSelected}
+                        />
+                        <Item
+                            title="Voting Report"
+                            to="/votingReport"
+                            icon={<AssessmentOutlinedIcon />}
                             selected={selected}
                             setSelected={setSelected}
                         />
