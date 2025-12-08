@@ -25,7 +25,7 @@ const StudentListInfo = () => {
     { field: 'email', headerName: 'EMAIL', flex: 1.6 },
     { field: 'department', headerName: 'DEPARTMENT', flex: 1 },
     { field: 'status', headerName: 'STATUS', flex: 0.8 },
-    { field: 'createdAt', headerName: 'CREATED', flex: 1, valueGetter: (p) => p.row.createdAt ? new Date(p.row.createdAt).toLocaleString() : '' },
+    { field: 'createdAt', headerName: 'CREATED', flex: 1, valueGetter: (value, row) => row.createdAt ? new Date(row.createdAt).toLocaleString() : '' },
   ];
 
   const fetchStudents = async () => {

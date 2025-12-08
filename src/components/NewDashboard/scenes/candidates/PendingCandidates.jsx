@@ -24,7 +24,7 @@ const PendingCandidates = () => {
     const showSuccessToast = (message) => toast.success(message, {
         className: "toast-message",
     });
-    
+
     const showErrorToast = (message) => toast.error(message, {
         className: "toast-message",
     });
@@ -96,9 +96,9 @@ const PendingCandidates = () => {
                         justifyContent="center"
                     >
                         {img ? (
-                            <img 
-                                src={`${BASE_URL}${img}`} 
-                                alt="Candidate" 
+                            <img
+                                src={`${BASE_URL}${img}`}
+                                alt="Candidate"
                                 style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '50%' }}
                             />
                         ) : (
@@ -137,7 +137,7 @@ const PendingCandidates = () => {
             cellClassName: "name-column--cell",
         },
         {
-            field: "age",
+            field: "cgpa",
             headerName: "CGPA",
             width: 100,
             type: "number",
@@ -148,7 +148,7 @@ const PendingCandidates = () => {
             flex: 1,
             renderCell: ({ row: { createdAt, _id } }) => {
                 let dateToUse = createdAt;
-                
+
                 // If createdAt doesn't exist, extract date from MongoDB _id (which contains creation timestamp)
                 if (!dateToUse && _id) {
                     try {
@@ -159,20 +159,20 @@ const PendingCandidates = () => {
                         console.error('Error extracting date from _id:', error);
                     }
                 }
-                
+
                 if (!dateToUse) {
                     return <Typography variant="body2" color={colors.grey[500]}>N/A</Typography>;
                 }
-                
+
                 try {
                     const date = new Date(dateToUse);
                     if (isNaN(date.getTime())) {
                         return <Typography variant="body2" color={colors.grey[500]}>Invalid Date</Typography>;
                     }
-                    return date.toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
                     });
                 } catch (error) {
                     return <Typography variant="body2" color={colors.grey[500]}>N/A</Typography>;
@@ -300,9 +300,9 @@ const PendingCandidates = () => {
                         <Topbar />
                         <ToastContainer />
                         <Box m="0px 20px">
-                            <Header 
-                                title="PENDING CANDIDATE APPLICATIONS" 
-                                subtitle="Review and approve candidate registrations" 
+                            <Header
+                                title="PENDING CANDIDATE APPLICATIONS"
+                                subtitle="Review and approve candidate registrations"
                             />
                             <Box
                                 m="20px 0 0 0"

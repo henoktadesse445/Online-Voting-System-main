@@ -119,7 +119,7 @@ export default function Signup() {
     const handleSubmit = async (e) => {
         setLoading(true);
         e.preventDefault();
-        
+
         // Validate passwords match
         if (formData.pass !== formData.re_pass) {
             alert('Passwords do not match');
@@ -133,7 +133,7 @@ export default function Signup() {
             setLoading(false);
             return;
         }
-        
+
         // Validate general email format
         if (!validateEmail(formData.email)) {
             alert('Please enter a valid email address');
@@ -144,7 +144,7 @@ export default function Signup() {
 
         try {
             let response;
-            
+
             // Create voter account first (without files - files are handled separately for candidates)
             const voterFormData = new FormData();
             voterFormData.append('firstName', formData.firstName);
@@ -160,7 +160,7 @@ export default function Signup() {
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            
+
             if (!voterResponse.data.success) {
                 signFailed(voterResponse.data.message || "Registration failed");
                 setLoading(false);
@@ -198,7 +198,7 @@ export default function Signup() {
                 candidateFormData.append('bio', formData.bio);
                 candidateFormData.append('age', formData.cgpa); // Using cgpa value for age field (backend compatibility)
                 candidateFormData.append('userId', voterResponse.data.userId);
-                
+
                 // Add files if provided
                 if (formData.image) {
                     candidateFormData.append('image', formData.image);
@@ -210,22 +210,22 @@ export default function Signup() {
                 candidateFormData.append('authenticatedDocument', formData.authenticatedDocument);
 
                 response = await axios.post(`${BASE_URL}/createCandidate`, candidateFormData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
             } else {
                 // Regular voter registration - already done
                 response = voterResponse;
             }
-            
+
             if (response.data.success) {
                 if (registrationType === 'candidate') {
                     toast.success("Candidate registration submitted successfully! Your application is pending admin approval. Redirecting to Login...", {
                         className: "toast-message",
                     });
                 } else {
-                signSuccess();
+                    signSuccess();
                 }
                 setTimeout(() => {
                     navigate('/Login');
@@ -260,7 +260,7 @@ export default function Signup() {
                             <h2 className="form-title">Wachemo University Student Registration</h2>
                             <form method="POST" enctype="multipart/form-data" className="register-form" id="register-form">
                                 <ToastContainer />
-                                
+
                                 <div className="form-group">
                                     <label for="firstName"><i className="zmdi zmdi-account material-icons-name"></i></label>
                                     <input type="text" name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} placeholder="Your First Name" required />
@@ -311,7 +311,7 @@ export default function Signup() {
                                         <div style={{ margin: '20px 0', padding: '10px', borderTop: '2px solid #ddd', borderBottom: '2px solid #ddd' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                                                 <h3 style={{ margin: 0, fontSize: '18px' }}>Candidate Information</h3>
-                                                <button 
+                                                <button
                                                     type="button"
                                                     onClick={() => setShowEligibilityInfo(!showEligibilityInfo)}
                                                     style={{
@@ -338,13 +338,13 @@ export default function Signup() {
                                                 </button>
                                             </div>
                                             {showEligibilityInfo && (
-                                                <div style={{ 
-                                                    marginBottom: '15px', 
-                                                    padding: '15px', 
-                                                    backgroundColor: '#fff3cd', 
-                                                    borderRadius: '8px', 
-                                                    borderLeft: '4px solid #ffc107', 
-                                                    fontSize: '14px', 
+                                                <div style={{
+                                                    marginBottom: '15px',
+                                                    padding: '15px',
+                                                    backgroundColor: '#fff3cd',
+                                                    borderRadius: '8px',
+                                                    borderLeft: '4px solid #ffc107',
+                                                    fontSize: '14px',
                                                     color: '#856404',
                                                     animation: 'fadeIn 0.3s ease-in',
                                                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
@@ -388,22 +388,22 @@ export default function Signup() {
                                 )}
 
                                 {/* Registration Type Selection - At the bottom, right side */}
-                                <div className="form-group" style={{ 
-                                    marginTop: '25px', 
-                                    marginBottom: '15px', 
-                                    padding: '20px', 
-                                    backgroundColor: '#f8f9fa', 
-                                    borderRadius: '10px', 
+                                <div className="form-group" style={{
+                                    marginTop: '25px',
+                                    marginBottom: '15px',
+                                    padding: '20px',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '10px',
                                     border: '2px solid #e0e0e0',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                    display: 'flex', 
+                                    display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'flex-end',
                                     transition: 'all 0.3s ease'
                                 }}>
-                                    <label style={{ 
-                                        marginBottom: '15px', 
-                                        fontWeight: 'bold', 
+                                    <label style={{
+                                        marginBottom: '15px',
+                                        fontWeight: 'bold',
                                         fontSize: '16px',
                                         color: '#333',
                                         alignSelf: 'flex-start',
@@ -411,20 +411,20 @@ export default function Signup() {
                                         alignItems: 'center',
                                         gap: '8px'
                                     }}>
-                                        <i className="zmdi zmdi-account-circle material-icons-name" style={{ fontSize: '20px', color: '#2196F3' }}></i> 
+                                        <i className="zmdi zmdi-account-circle material-icons-name" style={{ fontSize: '20px', color: '#2196F3' }}></i>
                                         <span>Register as:</span>
                                     </label>
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        gap: '12px', 
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '12px',
                                         alignSelf: 'flex-end',
                                         flexWrap: 'wrap'
                                     }}>
-                                        <label 
+                                        <label
                                             onClick={() => setRegistrationType('voter')}
-                                            style={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
                                                 cursor: 'pointer',
                                                 padding: '12px 20px',
                                                 borderRadius: '8px',
@@ -453,7 +453,7 @@ export default function Signup() {
                                                 value="voter"
                                                 checked={registrationType === 'voter'}
                                                 onChange={(e) => setRegistrationType(e.target.value)}
-                                                style={{ 
+                                                style={{
                                                     marginRight: '10px',
                                                     width: '18px',
                                                     height: '18px',
@@ -463,11 +463,11 @@ export default function Signup() {
                                             />
                                             <span style={{ fontSize: '15px', userSelect: 'none' }}>Voter</span>
                                         </label>
-                                        <label 
+                                        <label
                                             onClick={() => setRegistrationType('candidate')}
-                                            style={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
                                                 cursor: 'pointer',
                                                 padding: '12px 20px',
                                                 borderRadius: '8px',
@@ -496,7 +496,7 @@ export default function Signup() {
                                                 value="candidate"
                                                 checked={registrationType === 'candidate'}
                                                 onChange={(e) => setRegistrationType(e.target.value)}
-                                                style={{ 
+                                                style={{
                                                     marginRight: '10px',
                                                     width: '18px',
                                                     height: '18px',

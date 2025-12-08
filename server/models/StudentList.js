@@ -34,9 +34,9 @@ const studentListSchema = new mongoose.Schema({
   timestamps: true, // Automatically adds createdAt and updatedAt fields
 });
 
-module.exports = mongoose.model("StudentList", studentListSchema);
 // Indexes for faster queries
 studentListSchema.index({ name: 1 });
 studentListSchema.index({ email: 1 });
 studentListSchema.index({ status: 1 });
 studentListSchema.index({ createdAt: -1 });
+module.exports = mongoose.model("StudentList", studentListSchema);
