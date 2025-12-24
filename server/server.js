@@ -176,51 +176,119 @@ app.post("/api/studentList/upload", upload.single("file"), async (req, res) => {
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
-    const csvContent = fs.readFileSync(req.file.path, 'utf8');
-    const lines = csvContent.split('\n').filter(line => line.trim());
-    if (lines.length < 2) {
-      return res.status(400).json({ success: false, message: "CSV has no data rows" });
+    // Use xlsx to parse both CSV and Excel files
+    const XLSX = require('xlsx');
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    // Parse to JSON (array of objects with header keys)
+    const rawData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+    if (!rawData || rawData.length === 0) {
+      return res.status(400).json({ success: false, message: "File has no data rows" });
     }
 
     const results = { imported: 0, skipped: 0, errors: [] };
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      if (values.length < 3) continue;
+    for (let i = 0; i < rawData.length; i++) {
+      const row = rawData[i];
 
-      const firstName = values[0];
-      const lastName = values[1];
-      const rawId = values[2];
-      const department = values[3] || undefined;
+      // --- 🧠 Smart Column Detection ---
+      // Normalize keys to find standard fields regardless of casing/spacing
+      const keys = Object.keys(row);
+      let studentIdKey = keys.find(k => /^(student|voter).?id|id$/i.test(k));
+      let emailKey = keys.find(k => /^e.?mail$/i.test(k));
+      let nameKey = keys.find(k => /^name|full.?name$/i.test(k));
+      // Fallback for Name: Try to combine First + Last if "Name" not found
+      let firstNameKey = keys.find(k => /^first.?name$/i.test(k));
+      let lastNameKey = keys.find(k => /^last.?name$/i.test(k));
 
+      // Required fields check
+      if (!studentIdKey || (!nameKey && (!firstNameKey || !lastNameKey))) {
+        // Skip if essential auth strings are missing.
+        // We can't auth without ID, and we can't display without Name.
+        results.errors.push({ row: i + 2, error: "Missing Student ID or Name column" });
+        continue;
+      }
+
+      const rawId = row[studentIdKey];
       const studentId = normalizeStudentId(rawId);
-      if (!firstName || !lastName || !studentId) continue;
 
+      if (!studentId) {
+        results.errors.push({ row: i + 2, error: `Invalid Student ID format: ${rawId}` });
+        continue;
+      }
+
+      // Construct Name
+      let name = "Unknown";
+      if (nameKey) {
+        name = row[nameKey];
+      } else if (firstNameKey && lastNameKey) {
+        name = `${row[firstNameKey]} ${row[lastNameKey]}`;
+      }
+
+      // Construct Email (or generate fake one if missing, though typically required)
+      let email = emailKey ? row[emailKey] : "";
+      if (!email) {
+        // Optional: Generate one or skip. For now, let's skip if critical.
+        // Or allow empty email? The system uses email for OTP.
+        // Let's fallback to generated pattern if missing
+        const fName = firstNameKey ? row[firstNameKey] : name.split(' ')[0];
+        const lName = lastNameKey ? row[lastNameKey] : name.split(' ').slice(1).join(' ');
+        email = generateEmail(fName, lName, studentId);
+      }
+
+      // --- 🏗️ Construct Dynamic Payload ---
+      // 1. Start with standard fields
       const payload = {
         studentId,
-        name: `${firstName} ${lastName}`,
-        email: generateEmail(firstName, lastName, studentId),
-        department,
+        name,
+        email,
         status: 'active'
       };
 
-      try {
-        const existing = await StudentList.findOne({ studentId });
-        if (existing) {
-          results.skipped++;
-          continue;
+      // 2. Add ALL other columns dynamically
+      // We exclude the keys we already mapped to standard fields to avoid duplication (optional, but cleaner)
+      // actually, keeping them might be good for reference, but let's exclude the mapped raw ID to avoid confusion
+
+      keys.forEach(key => {
+        // Skip the raw ID column since we store normalized studentId
+        if (key === studentIdKey) return;
+
+        // Add other fields with specific handling if needed, or just as strings
+        // Special handling for CGPA to ensure it's a number
+        if (/cgpa|gpa/i.test(key)) {
+          const val = parseFloat(row[key]);
+          payload['cgpa'] = !isNaN(val) ? val : row[key];
         }
-        await new StudentList(payload).save();
+        else if (/department|dept/i.test(key)) {
+          payload['department'] = row[key];
+        }
+        else {
+          // Determine key name (sanitize if needed, or keep original)
+          // We'll keep original to match what user uploaded
+          payload[key] = row[key];
+        }
+      });
+
+      try {
+        // Use findOneAndUpdate with upsert for atomic operation
+        // payload includes everything, so it will overwrite existing dynamic fields too
+        await StudentList.findOneAndUpdate(
+          { studentId },
+          payload,
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
         results.imported++;
       } catch (e) {
-        results.errors.push({ row: i + 1, studentId, error: e.message });
+        results.errors.push({ row: i + 2, studentId, error: e.message });
       }
     }
 
     return res.json({ success: true, ...results });
   } catch (err) {
     console.error("Upload student list error:", err);
-    return res.status(500).json({ success: false, message: "Failed to process CSV", error: err.message });
+    return res.status(500).json({ success: false, message: "Failed to process file", error: err.message });
   }
 });
 
@@ -1899,7 +1967,7 @@ app.get("/api/studentList", async (req, res) => {
 
     const students = await StudentList.find(query)
       .sort({ createdAt: -1 })
-      .select("studentId name email college department year status createdAt updatedAt")
+      .select("studentId name email college department year cgpa status createdAt updatedAt")
       .lean();
 
     const totalCount = await StudentList.countDocuments(query);
@@ -2263,6 +2331,28 @@ app.post("/api/studentList/cleanup", async (req, res) => {
   }
 });
 
+// 🗑️ Delete ALL students from StudentList (Admin only - use with caution!)
+app.delete("/api/studentList", async (req, res) => {
+  try {
+    // Delete all student records
+    const result = await StudentList.deleteMany({});
+
+    console.log(`✅ Deleted all ${result.deletedCount} students from the list`);
+
+    res.json({
+      success: true,
+      message: `Successfully deleted all students from the list.`,
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    console.error("Error deleting all students:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting all students: " + err.message
+    });
+  }
+});
+
 // 🔄 Reset all votes (Admin only - for testing/new elections)
 app.post("/resetVotes", async (req, res) => {
   try {
@@ -2463,10 +2553,14 @@ app.patch("/updateCandidate/:id", async (req, res) => {
   }
 });
 
-// 🔐 Login - Supports both first-time (OTP-only) and returning users (password + OTP)
+// 🔐 Login - Single credential field (OTP for first-time, password for returning users)
 app.post("/login", async (req, res) => {
   try {
-    const { username, password, otp } = req.body;
+    const { username, credential } = req.body;
+
+    if (!username || !credential) {
+      return res.json({ success: false, message: "Username and credential are required" });
+    }
 
     // Allow login by email OR student voterId
     const query = username?.includes("@") ? { email: username } : { voterId: username };
@@ -2477,19 +2571,11 @@ app.post("/login", async (req, res) => {
 
     // Check if this is first-time login (user hasn't completed first login yet)
     if (!user.firstLoginCompleted) {
-      // FIRST-TIME LOGIN: Requires only OTP (pre-sent via email)
-      if (!otp) {
-        return res.json({
-          success: false,
-          message: "Please enter the OTP sent to your email for first-time login",
-          isFirstTimeLogin: true
-        });
-      }
-
+      // FIRST-TIME LOGIN: Credential is treated as OTP
       // Verify pre-sent OTP
       const otpRecord = await OTP.findOne({
         voterId: user._id,
-        code: otp,
+        code: credential,
         used: false,
         isPreElectionOTP: true
       }).sort({ createdAt: -1 });
@@ -2511,50 +2597,27 @@ app.post("/login", async (req, res) => {
         });
       }
 
-      // Generate Vote ID for first-time login
-      const voteId = `VOTE-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-
-      // Update user: mark first login complete and assign Vote ID
-      await User.updateOne(
-        { _id: user._id },
-        {
-          voteId,
-          firstLoginCompleted: true
-        }
-      );
-
       // Mark OTP as used
       await OTP.updateOne({ _id: otpRecord._id }, { used: true });
 
-      console.log(`✅ First-time login successful for ${user.email}, Vote ID: ${voteId}`);
+      console.log(`✅ First-time OTP verified for ${user.email}`);
 
-      // Return success with user session
+      // Return success with flag to require password change
       return res.json({
         success: true,
-        message: "First-time login successful! Welcome to the voting system.",
-        voterObject: {
-          id: user._id,
+        requiresPasswordChange: true,
+        message: "OTP verified. Please set a new password.",
+        userId: user._id.toString(),
+        userInfo: {
           name: user.name,
           email: user.email,
-          voterId: user.voterId,
-          voteId,
-          role: user.role,
-          voteStatus: user.voteStatus,
-          college: user.college,
-          department: user.department
+          voterId: user.voterId
         }
       });
     }
 
-    // RETURNING USER LOGIN: Password-only authentication (no OTP required)
-    if (!password) {
-      return res.json({
-        success: false,
-        message: "Password is required for login"
-      });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // RETURNING USER LOGIN: Credential is treated as password
+    const isPasswordValid = await bcrypt.compare(credential, user.password);
     if (!isPasswordValid) {
       return res.json({ success: false, message: "Invalid credentials" });
     }
@@ -2562,7 +2625,7 @@ app.post("/login", async (req, res) => {
     // Password is correct - allow direct login for returning users
     console.log(`✅ Returning user login successful for ${user.email}`);
 
-    // Return success with user session (no OTP required)
+    // Return success with user session
     return res.json({
       success: true,
       message: "Login successful",
@@ -2584,6 +2647,367 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// 🔑 Set Password - Mandatory password change after first-time OTP verification
+app.post("/setPassword", async (req, res) => {
+  try {
+    const { userId, newPassword, confirmPassword } = req.body;
+
+    // Validate inputs
+    if (!userId || !newPassword || !confirmPassword) {
+      return res.json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+
+    // Check password match
+    if (newPassword !== confirmPassword) {
+      return res.json({
+        success: false,
+        message: "Passwords do not match"
+      });
+    }
+
+    // Password strength validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character"
+      });
+    }
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Check if user has already completed first login
+    if (user.firstLoginCompleted) {
+      return res.json({
+        success: false,
+        message: "Password has already been set for this account"
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Generate Vote ID for first-time login
+    const voteId = `VOTE-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+    // Update user: set password, mark first login complete, and assign Vote ID
+    await User.updateOne(
+      { _id: user._id },
+      {
+        password: hashedPassword,
+        firstLoginCompleted: true,
+        voteId
+      }
+    );
+
+    console.log(`✅ Password set for user ${user.email}, Vote ID: ${voteId}`);
+
+    // Return success with user session
+    return res.json({
+      success: true,
+      message: "Password set successfully. You can now login with your new password.",
+      voterObject: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        voterId: user.voterId,
+        voteId,
+        role: user.role,
+        voteStatus: user.voteStatus,
+        college: user.college,
+        department: user.department
+      }
+    });
+  } catch (err) {
+    console.error("Error setting password:", err);
+    res.json({
+      success: false,
+      message: "Error setting password"
+    });
+  }
+});
+
+
+// 🔄 Request Password Reset - Send OTP to user's email
+app.post("/requestPasswordReset", async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.json({
+        success: false,
+        message: "Username or email is required"
+      });
+    }
+
+    // Find user by email or voterId
+    const query = username?.includes("@") ? { email: username } : { voterId: username };
+    const user = await User.findOne(query);
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Check if user has completed first login
+    if (!user.firstLoginCompleted) {
+      return res.json({
+        success: false,
+        message: "Please complete your first login before resetting password. Use the OTP sent to your email."
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP with 15-minute expiration
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Invalidate any previous password reset OTPs for this user
+    await OTP.updateMany(
+      { voterId: user._id, used: false, isPasswordReset: true },
+      { used: true }
+    );
+
+    // Create new password reset OTP
+    const newOTP = new OTP({
+      voterId: user._id,
+      code: otpCode,
+      email: user.email,
+      expiresAt: expiresAt,
+      used: false,
+      isPasswordReset: true // Mark as password reset OTP
+    });
+    await newOTP.save();
+
+    // Send OTP via email
+    try {
+      const transporter = await createEmailTransporter();
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Password Reset OTP - Wachemo University Voting System",
+        html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">Password Reset Request</h2>
+          <p>Hello <strong>${user.name}</strong>,</p>
+          <p>You have requested to reset your password for the Wachemo University Voting System.</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Your Password Reset OTP:</strong></p>
+            <h1 style="color: #e74c3c; font-size: 36px; letter-spacing: 5px; margin: 10px 0;">${otpCode}</h1>
+          </div>
+          
+          <p><strong>This OTP will expire in 15 minutes.</strong></p>
+          <p>If you did not request this password reset, please ignore this email and your password will remain unchanged.</p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="color: #7f8c8d; font-size: 12px;">
+            Wachemo University Voting System<br>
+            This is an automated message, please do not reply.
+          </p>
+        </div>
+      `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Password reset OTP sent to ${user.email}`);
+
+      // Mask email for privacy
+      const emailParts = user.email.split('@');
+      const maskedEmail = emailParts[0].substring(0, 2) + '**@' + emailParts[1];
+
+      res.json({
+        success: true,
+        message: "Password reset OTP sent to your email",
+        email: maskedEmail
+      });
+    } catch (emailError) {
+      console.error("❌ Error sending password reset OTP:", emailError);
+      await OTP.findByIdAndDelete(newOTP._id);
+      return res.json({
+        success: false,
+        message: "Failed to send OTP email. Please try again later."
+      });
+    }
+  } catch (err) {
+    console.error("Error requesting password reset:", err);
+    res.json({
+      success: false,
+      message: "Error requesting password reset"
+    });
+  }
+});
+
+// 🔍 Verify Password Reset OTP
+app.post("/verifyResetOTP", async (req, res) => {
+  try {
+    const { username, otp } = req.body;
+
+    if (!username || !otp) {
+      return res.json({
+        success: false,
+        message: "Username and OTP are required"
+      });
+    }
+
+    // Find user
+    const query = username?.includes("@") ? { email: username } : { voterId: username };
+    const user = await User.findOne(query);
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Find the password reset OTP
+    const otpRecord = await OTP.findOne({
+      voterId: user._id,
+      code: otp,
+      used: false,
+      isPasswordReset: true
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      return res.json({
+        success: false,
+        message: "Invalid OTP"
+      });
+    }
+
+    // Check if OTP is expired
+    if (new Date() > otpRecord.expiresAt) {
+      await OTP.findByIdAndUpdate(otpRecord._id, { used: true });
+      return res.json({
+        success: false,
+        message: "OTP has expired. Please request a new one."
+      });
+    }
+
+    // Mark OTP as used
+    await OTP.findByIdAndUpdate(otpRecord._id, { used: true });
+
+    // Generate temporary reset token (valid for 10 minutes)
+    const resetToken = `RST-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    const resetTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Store reset token in user document temporarily
+    await User.findByIdAndUpdate(user._id, {
+      passwordResetToken: resetToken,
+      passwordResetExpiry: resetTokenExpiry
+    });
+
+    console.log(`✅ Password reset OTP verified for ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "OTP verified successfully",
+      resetToken: resetToken,
+      userId: user._id.toString()
+    });
+  } catch (err) {
+    console.error("Error verifying reset OTP:", err);
+    res.json({
+      success: false,
+      message: "Error verifying OTP"
+    });
+  }
+});
+
+// 🔒 Reset Password
+app.post("/resetPassword", async (req, res) => {
+  try {
+    const { userId, resetToken, newPassword, confirmPassword } = req.body;
+
+    // Validate inputs
+    if (!userId || !resetToken || !newPassword || !confirmPassword) {
+      return res.json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+
+    // Check password match
+    if (newPassword !== confirmPassword) {
+      return res.json({
+        success: false,
+        message: "Passwords do not match"
+      });
+    }
+
+    // Password strength validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.json({
+        success: false,
+        message: "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character"
+      });
+    }
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Verify reset token
+    if (user.passwordResetToken !== resetToken) {
+      return res.json({
+        success: false,
+        message: "Invalid reset token"
+      });
+    }
+
+    // Check if token is expired
+    if (!user.passwordResetExpiry || new Date() > user.passwordResetExpiry) {
+      return res.json({
+        success: false,
+        message: "Reset token has expired. Please request a new password reset."
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password and clear reset token
+    await User.findByIdAndUpdate(user._id, {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpiry: null
+    });
+
+    console.log(`✅ Password reset successful for ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "Password reset successfully. You can now login with your new password."
+    });
+  } catch (err) {
+    console.error("Error resetting password:", err);
+    res.json({
+      success: false,
+      message: "Error resetting password"
+    });
+  }
+});
 
 // 🔐 Login - Step 2: Verify OTP and Generate Vote ID
 app.post("/verifyOTP", async (req, res) => {

@@ -49,7 +49,7 @@ const Routing = () => {
         <Route path="/votingSettings" element={<VotingSettings />} />
         <Route path="/pendingCandidates" element={<PendingCandidates />} />
         <Route path="/registerCandidate" element={<CandidateRegister />} />
-        <Route path="/studentListUpload" element={<StudentListUpload />} />
+
         <Route path="/studentListInfo" element={<StudentListInfo />} />
         <Route path="/votingReport" element={<VotingReport />} />
         <Route path="/otpDistribution" element={<OTPDistribution />} />

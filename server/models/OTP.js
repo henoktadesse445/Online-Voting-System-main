@@ -28,6 +28,10 @@ const otpSchema = new mongoose.Schema({
     type: Boolean,
     default: false, // Marks OTPs sent before election for first-time login
   },
+  isPasswordReset: {
+    type: Boolean,
+    default: false, // Marks OTPs for password reset
+  },
   createdAt: {
     type: Date,
     default: Date.now,

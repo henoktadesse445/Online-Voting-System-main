@@ -99,6 +99,15 @@ const userSchema = new mongoose.Schema({
       "Gender and Equality Officer"
     ],
   },
+  // Password reset fields
+  passwordResetToken: {
+    type: String,
+    default: null,
+  },
+  passwordResetExpiry: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt fields
 });

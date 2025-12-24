@@ -58,13 +58,15 @@ const StudentListUpload = () => {
               <Header title="Upload Student List" subtitle="Import authorized students via CSV" />
               <Paper elevation={3} sx={{ p: 3, backgroundColor: colors.primary[400] }}>
                 <Box display="flex" alignItems="center" gap={2}>
-                  <input type="file" accept=".csv" onChange={handleFileChange} />
+                  <input type="file" accept=".csv, .xlsx, .xls" onChange={handleFileChange} />
                   <Button variant="contained" onClick={handleUpload} disabled={loading}>
                     {loading ? 'Uploading...' : 'Upload'}
                   </Button>
                 </Box>
                 <Typography sx={{ mt: 2 }} color={colors.grey[100]}>
-                  Expected CSV headers: FirstName,LastName,StudentID,Department
+                  Accepted formats: CSV, Excel (.xlsx, .xls).
+                  <br />
+                  Required column: <strong>Student ID</strong> (or ID, Voter ID). Name/Email recommended.
                 </Typography>
                 {error && (
                   <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>

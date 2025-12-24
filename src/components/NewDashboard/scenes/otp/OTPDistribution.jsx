@@ -64,8 +64,8 @@ const OTPDistribution = () => {
                         <Alert severity="info" sx={{ mb: 3 }}>
                             <Typography variant="body2">
                                 <strong>Important:</strong> OTPs will be valid for 7 days. Users must complete their first login
-                                before the election using these credentials. Upon first login, a unique Vote ID will be generated
-                                for each user.
+                                before the election using these credentials. Upon OTP verification, users will be required to set
+                                a secure password. A unique Vote ID will be generated after password setup.
                             </Typography>
                         </Alert>
 
@@ -175,15 +175,19 @@ const OTPDistribution = () => {
                         </Typography>
 
                         <Typography variant="body2" sx={{ mb: 2, color: colors.grey[100] }}>
-                            <strong>3. First Login:</strong> Users log in with their Student ID and OTP (no password required).
+                            <strong>3. First Login:</strong> Users log in with their Student ID and OTP in the single credential field.
                         </Typography>
 
                         <Typography variant="body2" sx={{ mb: 2, color: colors.grey[100] }}>
-                            <strong>4. Vote ID Generation:</strong> Upon successful first login, a unique Vote ID is automatically generated.
+                            <strong>4. Password Setup:</strong> After OTP verification, users must set a secure password (mandatory).
+                        </Typography>
+
+                        <Typography variant="body2" sx={{ mb: 2, color: colors.grey[100] }}>
+                            <strong>5. Vote ID Generation:</strong> Upon successful password setup, a unique Vote ID is automatically generated.
                         </Typography>
 
                         <Typography variant="body2" sx={{ color: colors.grey[100] }}>
-                            <strong>5. Subsequent Logins:</strong> After first login, users will use password + OTP authentication.
+                            <strong>6. Subsequent Logins:</strong> After first login, users simply enter their password in the same credential field (no OTP needed).
                         </Typography>
                     </CardContent>
                 </Card>

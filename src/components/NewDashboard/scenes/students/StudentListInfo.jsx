@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, TextField, MenuItem, IconButton, Paper, Stack } from '@mui/material';
+import { Box, Typography, TextField, MenuItem, IconButton, Paper, Stack, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Alert } from '@mui/material';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { ColorModeContext, useMode, tokens } from '../../theme';
 import Header from '../../newComponents/Header';
@@ -7,6 +7,8 @@ import Topbar from '../global/Topbar';
 import Sidebar from '../global/Sidebar';
 import { DataGrid } from '@mui/x-data-grid';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
 
@@ -18,15 +20,25 @@ const StudentListInfo = () => {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [total, setTotal] = useState(0);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const columns = [
+  // Upload State
+  const [openUploadDialog, setOpenUploadDialog] = useState(false);
+  const [file, setFile] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+
+  const [columns, setColumns] = useState([
     { field: 'studentId', headerName: 'STUDENT ID', flex: 1 },
     { field: 'name', headerName: 'NAME', flex: 1.2 },
     { field: 'email', headerName: 'EMAIL', flex: 1.6 },
     { field: 'department', headerName: 'DEPARTMENT', flex: 1 },
+    { field: 'cgpa', headerName: 'CGPA', flex: 0.5, type: 'number' },
     { field: 'status', headerName: 'STATUS', flex: 0.8 },
     { field: 'createdAt', headerName: 'CREATED', flex: 1, valueGetter: (value, row) => row.createdAt ? new Date(row.createdAt).toLocaleString() : '' },
-  ];
+  ]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -36,9 +48,41 @@ const StudentListInfo = () => {
       if (search) q.append('search', search);
       const url = `${BASE_URL}/api/studentList${q.toString() ? `?${q.toString()}` : ''}`;
       const resp = await axios.get(url);
+
       if (resp.data && resp.data.success) {
-        setRows(resp.data.students || []);
+        const studentData = resp.data.students || [];
+        setRows(studentData);
         setTotal(resp.data.totalCount || 0);
+
+        // --- 📊 Dynamic Column Generation ---
+        if (studentData.length > 0) {
+          // Get all unique keys from the first record (or iterate a few to be safe)
+          // We'll prioritize standard columns, then add the rest
+          const firstRow = studentData[0];
+          const keys = Object.keys(firstRow).filter(k =>
+            !['_id', '__v', 'updatedAt', 'status', 'createdAt', 'studentId', 'name', 'email'].includes(k)
+          );
+
+          const dynamicCols = keys.map(key => ({
+            field: key,
+            headerName: key.toUpperCase(),
+            flex: 1,
+            // Simple assumption: if it looks like a number, treat as number
+            type: typeof firstRow[key] === 'number' ? 'number' : 'string'
+          }));
+
+          // Reconstruct columns: Standard first -> Dynamic -> Status/Date last
+          const newColumns = [
+            { field: 'studentId', headerName: 'STUDENT ID', flex: 1 },
+            { field: 'name', headerName: 'NAME', flex: 1.2 },
+            { field: 'email', headerName: 'EMAIL', flex: 1.6 },
+            // Insert dynamic columns here
+            ...dynamicCols,
+            { field: 'status', headerName: 'STATUS', flex: 0.8 },
+            { field: 'createdAt', headerName: 'CREATED', flex: 1, valueGetter: (value, row) => row.createdAt ? new Date(row.createdAt).toLocaleString() : '' },
+          ];
+          setColumns(newColumns);
+        }
       } else {
         setRows([]);
         setTotal(0);
@@ -58,6 +102,74 @@ const StudentListInfo = () => {
   }, []);
 
   const onApplyFilters = () => fetchStudents();
+
+  const handleDeleteAll = async () => {
+    setDeleteLoading(true);
+    try {
+      const resp = await axios.delete(`${BASE_URL}/api/studentList`);
+      if (resp.data && resp.data.success) {
+        alert(`Successfully deleted ${resp.data.deletedCount} students from the list.`);
+        setOpenDeleteDialog(false);
+        fetchStudents(); // Refresh the list
+      } else {
+        alert('Failed to delete students: ' + (resp.data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error deleting all students:', err);
+      alert('Error deleting students: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCloseDialog = () => {
+    if (!deleteLoading) {
+      setOpenDeleteDialog(false);
+    }
+  };
+
+  // Upload Handlers
+  const handleFileChange = (e) => {
+    const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+    setFile(f);
+    setUploadResult(null);
+    setUploadError('');
+  };
+
+  const handleUpload = async () => {
+    try {
+      if (!file) {
+        setUploadError('Please select a CSV file to upload');
+        return;
+      }
+      setUploadLoading(true);
+      setUploadError('');
+      setUploadResult(null);
+      const formData = new FormData();
+      formData.append('file', file);
+      const resp = await axios.post(`${BASE_URL}/api/studentList/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setUploadResult(resp.data);
+      if (resp.data && resp.data.success) {
+        fetchStudents(); // Refresh list on success
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Upload failed';
+      setUploadError(msg);
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleCloseUploadDialog = () => {
+    if (!uploadLoading) {
+      setOpenUploadDialog(false);
+      setFile(null);
+      setUploadResult(null);
+      setUploadError('');
+    }
+  };
 
   return (
     <ColorModeContext.Provider value={colorMode}>
@@ -100,6 +212,26 @@ const StudentListInfo = () => {
                   >
                     <RefreshIcon />
                   </IconButton>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    startIcon={<CloudUploadIcon />}
+                    onClick={() => setOpenUploadDialog(true)}
+                    disabled={loading}
+                    sx={{ ml: 1 }}
+                  >
+                    Upload CSV
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => setOpenDeleteDialog(true)}
+                    disabled={loading || total === 0}
+                    sx={{ ml: 1 }}
+                  >
+                    Delete All
+                  </Button>
                   <Typography sx={{ ml: 'auto' }} color={colors.grey[100]}>
                     Total: {total}
                   </Typography>
@@ -138,6 +270,108 @@ const StudentListInfo = () => {
             </Box>
           </main>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={openDeleteDialog}
+          onClose={handleCloseDialog}
+          aria-labelledby="delete-dialog-title"
+          aria-describedby="delete-dialog-description"
+        >
+          <DialogTitle id="delete-dialog-title" sx={{ color: colors.grey[100], backgroundColor: colors.primary[400] }}>
+            Delete All Students?
+          </DialogTitle>
+          <DialogContent sx={{ backgroundColor: colors.primary[400] }}>
+            <DialogContentText id="delete-dialog-description" sx={{ color: colors.grey[100] }}>
+              Are you sure you want to delete all {total} students from the list? This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ backgroundColor: colors.primary[400] }}>
+            <Button onClick={handleCloseDialog} disabled={deleteLoading} sx={{ color: colors.grey[100] }}>
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteAll} color="error" variant="contained" disabled={deleteLoading} autoFocus>
+              {deleteLoading ? 'Deleting...' : 'Delete All'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Upload Dialog */}
+        <Dialog
+          open={openUploadDialog}
+          onClose={handleCloseUploadDialog}
+          aria-labelledby="upload-dialog-title"
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle id="upload-dialog-title" sx={{ backgroundColor: colors.primary[400], color: colors.grey[100] }}>
+            Upload Student List (CSV)
+          </DialogTitle>
+          <DialogContent sx={{ backgroundColor: colors.primary[400] }}>
+            <Box mt={2}>
+              <Typography color={colors.grey[100]} mb={2}>
+                Select a file (CSV or Excel) to upload.
+                <br />
+                System will auto-detect columns.
+                <br />
+                <strong>Required:</strong> Student ID
+                <br />
+                <strong>Recommended:</strong> Name, Email, Department, CGPA
+                <br />
+                <em>(You can include any other columns)</em>
+              </Typography>
+
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <input
+                  type="file"
+                  accept=".csv, .xlsx, .xls"
+                  onChange={handleFileChange}
+                  style={{ color: colors.grey[100] }}
+                  disabled={uploadLoading}
+                />
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={handleUpload}
+                  disabled={uploadLoading || !file}
+                  startIcon={<CloudUploadIcon />}
+                >
+                  {uploadLoading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </Box>
+
+              {uploadError && (
+                <Alert severity="error" sx={{ mb: 2 }}>{uploadError}</Alert>
+              )}
+
+              {uploadResult && uploadResult.success && (
+                <Box>
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    Upload completed! {uploadResult.imported} imported, {uploadResult.skipped} skipped.
+                  </Alert>
+
+                  {Array.isArray(uploadResult.errors) && uploadResult.errors.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography color="error" variant="h6">Errors ({uploadResult.errors.length})</Typography>
+                      <Paper sx={{ p: 2, mt: 1, maxHeight: 200, overflow: 'auto', backgroundColor: colors.primary[500] }}>
+                        {uploadResult.errors.slice(0, 50).map((e, idx) => (
+                          <Typography key={idx} color={colors.grey[100]} variant="body2" sx={{ mb: 0.5 }}>
+                            • {e.studentId || 'Row ' + e.row}: {e.error}
+                          </Typography>
+                        ))}
+                      </Paper>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ backgroundColor: colors.primary[400] }}>
+            <Button onClick={handleCloseUploadDialog} sx={{ color: colors.grey[100] }}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
       </ThemeProvider>
     </ColorModeContext.Provider>
   );

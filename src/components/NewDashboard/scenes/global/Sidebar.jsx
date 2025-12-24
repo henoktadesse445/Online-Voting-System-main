@@ -133,13 +133,7 @@ const Sidebar = () => {
                             selected={selected}
                             setSelected={setSelected}
                         />
-                        <Item
-                            title="Upload Student List"
-                            to="/studentListUpload"
-                            icon={<UploadFileOutlinedIcon />}
-                            selected={selected}
-                            setSelected={setSelected}
-                        />
+
                         <Item
                             title="Student List Info"
                             to="/studentListInfo"
