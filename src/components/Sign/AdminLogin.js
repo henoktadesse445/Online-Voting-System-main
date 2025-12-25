@@ -2,7 +2,7 @@ import "./SignUtils/CSS/Sign.css"
 import "./SignUtils/CSS/style.css.map"
 import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/adminbanner.png"
-import { useState} from 'react';
+import { useState } from 'react';
 import Nav_bar from "../Navbar/Navbar";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
@@ -17,32 +17,40 @@ const AdminLogin = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const loginSuccess = () => toast.success("Login Success",{
+    const loginSuccess = () => toast.success("Login Success", {
         // position: toast.POSITION.TOP_CENTER,
         className: "toast-message",
     });
-    const loginFailed = (message) => toast.error(`${message || "Invalid Details \n Please Try Again!"}`,{
+    const loginFailed = (message) => toast.error(`${message || "Invalid Details \n Please Try Again!"}`, {
         // position: toast.POSITION.TOP_CENTER,
         className: "toast-message",
     });
 
     const handleLogin = async () => {
         setLoading(true);
-        console.log("Attempting login with:", { username, password }); // Debug log
+
         try {
             const response = await axios.post(`${BASE_URL}/adminlogin`, { username, password });
-            console.log(response.data)
-            if(response.data.success){
+
+            if (response.data.success) {
+                // Store admin session data
+                const adminData = response.data.adminObject || {
+                    _id: "6766786c4f039103c8120e98",
+                    username: username,
+                    role: "admin"
+                };
+                localStorage.setItem('currentUser', JSON.stringify(adminData));
+
                 loginSuccess();
-                setTimeout(()=>{
+                setTimeout(() => {
                     navigate('/Admin');
-                },2000)
+                }, 2000)
             }
-            else{
+            else {
                 loginFailed(response.data.message || "Invalid admin credentials");
             }
-          } 
-          catch (error) {
+        }
+        catch (error) {
             console.error('Login failed:', error);
             if (error.response && error.response.data && error.response.data.message) {
                 loginFailed(error.response.data.message);
@@ -51,10 +59,10 @@ const AdminLogin = () => {
             } else {
                 loginFailed("Network error. Please check if the server is running.");
             }
-          }finally {
+        } finally {
             setLoading(false);
-          }
-      
+        }
+
     };
 
     return (
@@ -63,7 +71,7 @@ const AdminLogin = () => {
             <section className="sign-in">
                 <div className="container">
                     <div className="signin-content">
-                    
+
                         <div className="signin-image">
                             <figure><img src={signinimage} alt="sing up image" /></figure>
                         </div>
@@ -72,19 +80,19 @@ const AdminLogin = () => {
                             <h2 className="form-title">Admin Login</h2>
                             {/* <form method="" className="register-form" id="login-form"> */}
                             <ToastContainer />
-                                <div className="form-group">
-                                    <label for="email"><i className="zmdi zmdi-account material-icons-name"></i></label>
-                                    <input type="text" name="email" id="email" placeholder="Enter Admin Username" onChange={(e) => setUsername(e.target.value)} />
-                                </div>
-                                <div className="form-group">
-                                    <label for="pass"><i className="zmdi zmdi-lock"></i></label>
-                                    <input type="password" name="pass" id="pass" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
-                                </div>
-                                <div className="form-group form-button">
-                                    {/* <input type="submit" name="signin" id="signin" className="form-submit" value="Log in" onSubmit={handleLogin} /> */}
-                                    <button onClick={handleLogin} disabled={loading}>{loading ? <div className="spinner"></div> : 'Login'}</button>
-                                    
-                                </div>
+                            <div className="form-group">
+                                <label for="email"><i className="zmdi zmdi-account material-icons-name"></i></label>
+                                <input type="text" name="email" id="email" placeholder="Enter Admin Username" onChange={(e) => setUsername(e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                                <label for="pass"><i className="zmdi zmdi-lock"></i></label>
+                                <input type="password" name="pass" id="pass" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
+                            </div>
+                            <div className="form-group form-button">
+                                {/* <input type="submit" name="signin" id="signin" className="form-submit" value="Log in" onSubmit={handleLogin} /> */}
+                                <button onClick={handleLogin} disabled={loading}>{loading ? <div className="spinner"></div> : 'Login'}</button>
+
+                            </div>
 
                             {/* </form> */}
                         </div>

@@ -3,20 +3,25 @@ import UserNavbar from '../../../Navbar/UserNavbar';
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { styled } from '@mui/material/styles';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell, { tableCellClasses } from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import Button from '@mui/material/Button';
 import ScrollReveal from "scrollreveal";
 import Backdrop from '@mui/material/Backdrop';
 import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
 import Fade from '@mui/material/Fade';
+import {
+    Card,
+    CardContent,
+    CardMedia,
+    CardActions,
+    Typography,
+    Grid,
+    Chip,
+    Avatar,
+    Container,
+    Button
+} from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import SchoolIcon from '@mui/icons-material/School';
 import { BASE_URL } from '../../../../helper';
 import Cookies from 'js-cookie';
 
@@ -32,39 +37,6 @@ const style = {
     p: 4,
 };
 
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-    [`&.${tableCellClasses.head}`]: {
-        // backgroundColor: theme.palette.common,
-        color: theme.palette.common.white,
-        fontSize: 16,
-    },
-    [`&.${tableCellClasses.body}`]: {
-        fontSize: 14,
-    },
-}));
-
-const StyledTableRow = styled(TableRow)(({ theme }) => ({
-    '&:nth-of-type(odd)': {
-        backgroundColor: theme.palette.action.hover,
-    },
-    // hide last border
-    '&:last-child td, &:last-child th': {
-        border: 0,
-    },
-}));
-const columns = [
-    { id: 'fullname', label: `Candidate Name`, width: 220, minWidth: 180, align: "left" },
-    { id: 'position', label: 'Position (After Election)', width: 200, minWidth: 180, align: "left" },
-    { id: 'party', label: 'Department', width: 160, minWidth: 140 },
-    { id: 'bio', label: 'Candidate Bio', width: 300, minWidth: 240, align: "left" },
-    { id: 'age', label: 'CGPA', width: 80, minWidth: 80, align: "center" },
-    { id: 'photo', label: 'Photo', width: 84, minWidth: 70, align: "left" },
-    { id: 'action', label: '', width: 140, minWidth: 120 },
-];
-
-
-
 export default function CustomizedTables() {
     const revealRefBottom = useRef(null);
     const revealRefLeft = useRef(null);
@@ -72,54 +44,55 @@ export default function CustomizedTables() {
     const revealRefRight = useRef(null);
 
     useEffect(() => {
-
-
-        ScrollReveal().reveal(revealRefBottom.current, {
-
-            duration: 1000,
-            delay: 300,
-            distance: '50px',
-            origin: 'bottom',
-            easing: 'ease',
-            reset: 'true',
-        });
+        if (revealRefBottom.current) {
+            ScrollReveal().reveal(revealRefBottom.current, {
+                duration: 1000,
+                delay: 300,
+                distance: '50px',
+                origin: 'bottom',
+                easing: 'ease',
+                reset: 'true',
+            });
+        }
     }, []);
+
     useEffect(() => {
+        if (revealRefRight.current) {
+            ScrollReveal().reveal(revealRefRight.current, {
+                duration: 1000,
+                delay: 300,
+                distance: '50px',
+                origin: 'right',
+                easing: 'ease',
+                reset: 'true',
+            });
+        }
+    }, []);
 
+    useEffect(() => {
+        if (revealRefLeft.current) {
+            ScrollReveal().reveal(revealRefLeft.current, {
+                duration: 1000,
+                delay: 300,
+                distance: '50px',
+                origin: 'left',
+                easing: 'ease',
+                reset: 'true',
+            });
+        }
+    }, []);
 
-        ScrollReveal().reveal(revealRefRight.current, {
-
-            duration: 1000,
-            delay: 300,
-            distance: '50px',
-            origin: 'right',
-            easing: 'ease',
-            reset: 'true',
-        });
-    }, []); useEffect(() => {
-
-
-        ScrollReveal().reveal(revealRefLeft.current, {
-
-            duration: 1000,
-            delay: 300,
-            distance: '50px',
-            origin: 'left',
-            easing: 'ease',
-            reset: 'true',
-        });
-    }, []); useEffect(() => {
-
-
-        ScrollReveal().reveal(revealRefTop.current, {
-
-            duration: 1000,
-            delay: 300,
-            distance: '50px',
-            origin: 'top',
-            easing: 'ease',
-            reset: 'true',
-        });
+    useEffect(() => {
+        if (revealRefTop.current) {
+            ScrollReveal().reveal(revealRefTop.current, {
+                duration: 1000,
+                delay: 300,
+                distance: '50px',
+                origin: 'top',
+                easing: 'ease',
+                reset: 'true',
+            });
+        }
     }, []);
     const [candidate, setCandidate] = useState([]);
     const voterid = Cookies.get('myCookie')
@@ -139,14 +112,14 @@ export default function CustomizedTables() {
     const [isLoadingVoter, setIsLoadingVoter] = useState(true);
     const [votingSettings, setVotingSettings] = useState(null);
     const [timeRemaining, setTimeRemaining] = useState(null);
-    
+
     useEffect(() => {
         if (!voterid) {
             console.error('No voter ID found in cookie');
             setIsLoadingVoter(false);
             return;
         }
-        
+
         axios.get(`${BASE_URL}/getVoterbyID/${voterid}`)
             .then((response) => {
                 if (response.data.success) {
@@ -175,27 +148,27 @@ export default function CustomizedTables() {
                 console.error('Error fetching voting settings:', error);
             }
         };
-        
+
         fetchSettings();
         // Refresh more frequently (every 5 seconds) to catch immediate changes
         const interval = setInterval(fetchSettings, 5000);
-        
+
         return () => clearInterval(interval);
     }, []);
 
     // Update countdown timer
     useEffect(() => {
         if (!votingSettings) return;
-        
+
         const updateCountdown = () => {
             const now = new Date();
             const endDate = new Date(votingSettings.endDate);
             const startDate = new Date(votingSettings.startDate);
-            
+
             // Add a buffer (30 seconds) to account for timezone and processing delays
             // If we're within 30 seconds of start time, consider voting active
             const buffer = 30000; // 30 seconds in milliseconds
-            
+
             if (now < (startDate.getTime() - buffer)) {
                 setTimeRemaining({ type: 'untilStart', ms: startDate - now });
             } else if (now >= (startDate.getTime() - buffer) && now <= endDate && votingSettings.isActive) {
@@ -204,28 +177,28 @@ export default function CustomizedTables() {
                 setTimeRemaining({ type: 'ended', ms: 0 });
             }
         };
-        
+
         updateCountdown();
         const interval = setInterval(updateCountdown, 1000); // Update every second
-        
+
         return () => clearInterval(interval);
     }, [votingSettings]);
 
     const formatTimeRemaining = (ms) => {
         if (ms <= 0) return '0 days, 0 hours, 0 minutes';
-        
+
         const days = Math.floor(ms / (1000 * 60 * 60 * 24));
         const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-        
+
         return `${days}d ${hours}h ${minutes}m ${seconds}s`;
     };
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
-    
+
     // OTP verification states
     const [otpModalOpen, setOtpModalOpen] = React.useState(false);
     const [otpCode, setOtpCode] = React.useState('');
@@ -287,7 +260,7 @@ export default function CustomizedTables() {
             setOtpRequested(false);
             setOtpMessage('');
             setOtpModalOpen(true);
-            
+
             // Request OTP
             setOtpLoading(true);
             const otpResponse = await axios.post(`${BASE_URL}/api/requestOTP`, {
@@ -324,7 +297,7 @@ export default function CustomizedTables() {
             }
 
             const voterObjectId = voter._id || voterid;
-            
+
             setOtpLoading(true);
             setOtpMessage('');
 
@@ -351,7 +324,7 @@ export default function CustomizedTables() {
             setOtpLoading(false);
         }
     }
-    
+
 
 
 
@@ -360,11 +333,11 @@ export default function CustomizedTables() {
     const startDate = votingSettings ? new Date(votingSettings.startDate) : null;
     const endDate = votingSettings ? new Date(votingSettings.endDate) : null;
     const buffer = 30000; // 30 seconds buffer for safety
-    
-    const isVotingActive = votingSettings && votingSettings.isActive && 
-                           startDate && endDate &&
-                           now >= (startDate.getTime() - buffer) && 
-                           now <= endDate;
+
+    const isVotingActive = votingSettings && votingSettings.isActive &&
+        startDate && endDate &&
+        now >= (startDate.getTime() - buffer) &&
+        now <= endDate;
 
     return (
         <div className='Vote-Page'>
@@ -376,7 +349,7 @@ export default function CustomizedTables() {
                 <div className='Heading1' ref={revealRefRight}>
                     <p><span>GIVE</span> Your Vote</p>
                 </div>
-                
+
                 {/* Voting Status Banner */}
                 {votingSettings && (
                     <div style={{
@@ -385,10 +358,10 @@ export default function CustomizedTables() {
                         maxWidth: '800px',
                         borderRadius: '8px',
                         textAlign: 'center',
-                        backgroundColor: isVotingActive ? '#e8f5e9' : 
-                                       (startDate && now < (startDate.getTime() - 30000)) ? '#e3f2fd' : '#fff3e0',
-                        border: `2px solid ${isVotingActive ? '#4caf50' : 
-                                       (startDate && now < (startDate.getTime() - 30000)) ? '#2196f3' : '#ff9800'}`,
+                        backgroundColor: isVotingActive ? '#e8f5e9' :
+                            (startDate && now < (startDate.getTime() - 30000)) ? '#e3f2fd' : '#fff3e0',
+                        border: `2px solid ${isVotingActive ? '#4caf50' :
+                            (startDate && now < (startDate.getTime() - 30000)) ? '#2196f3' : '#ff9800'}`,
                     }}>
                         {isVotingActive ? (
                             <>
@@ -433,10 +406,10 @@ export default function CustomizedTables() {
                     </div>
                 )}
                 {!voterid && (
-                    <div style={{ 
-                        padding: '20px', 
-                        margin: '20px', 
-                        backgroundColor: '#ffebee', 
+                    <div style={{
+                        padding: '20px',
+                        margin: '20px',
+                        backgroundColor: '#ffebee',
                         border: '1px solid #f44336',
                         borderRadius: '5px',
                         textAlign: 'center'
@@ -446,10 +419,10 @@ export default function CustomizedTables() {
                     </div>
                 )}
                 {voterid && !voter && !isLoadingVoter && (
-                    <div style={{ 
-                        padding: '20px', 
-                        margin: '20px', 
-                        backgroundColor: '#fff3e0', 
+                    <div style={{
+                        padding: '20px',
+                        margin: '20px',
+                        backgroundColor: '#fff3e0',
                         border: '1px solid #ff9800',
                         borderRadius: '5px',
                         textAlign: 'center'
@@ -459,9 +432,9 @@ export default function CustomizedTables() {
                     </div>
                 )}
                 {isLoadingVoter && (
-                    <div style={{ 
-                        padding: '20px', 
-                        margin: '20px', 
+                    <div style={{
+                        padding: '20px',
+                        margin: '20px',
                         textAlign: 'center'
                     }}>
                         <p>Loading your voter information...</p>
@@ -495,14 +468,14 @@ export default function CustomizedTables() {
                             <p style={{ marginBottom: '20px', color: '#666' }}>
                                 A One-Time Password has been sent to your email address. Please enter it below to complete your vote.
                             </p>
-                            
+
                             {otpMessage && (
                                 <div style={{
                                     padding: '15px',
                                     marginBottom: '15px',
                                     borderRadius: '4px',
-                                    backgroundColor: otpMessage.includes('sent') || otpMessage.includes('success') 
-                                        ? '#e8f5e9' 
+                                    backgroundColor: otpMessage.includes('sent') || otpMessage.includes('success')
+                                        ? '#e8f5e9'
                                         : '#ffebee',
                                     color: otpMessage.includes('sent') || otpMessage.includes('success')
                                         ? '#2e7d32'
@@ -574,14 +547,14 @@ export default function CustomizedTables() {
                                     style={{
                                         padding: '10px 20px',
                                         fontSize: '16px',
-                                        backgroundColor: (otpLoading || !otpRequested || otpCode.length !== 6) 
-                                            ? '#ccc' 
+                                        backgroundColor: (otpLoading || !otpRequested || otpCode.length !== 6)
+                                            ? '#ccc'
                                             : '#2196F3',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: '4px',
-                                        cursor: (otpLoading || !otpRequested || otpCode.length !== 6) 
-                                            ? 'not-allowed' 
+                                        cursor: (otpLoading || !otpRequested || otpCode.length !== 6)
+                                            ? 'not-allowed'
                                             : 'pointer',
                                     }}
                                 >
@@ -644,88 +617,133 @@ export default function CustomizedTables() {
                     </p>
                 </div>
 
-                {/* All Candidates Table */}
+                {/* All Candidates Grid */}
                 {candidate.length > 0 ? (
-                    <TableContainer component={Paper} ref={revealRefBottom}>
-                        <div style={{ padding: '15px', backgroundColor: '#e3f2fd', borderBottom: '2px solid #2196F3' }}>
-                            <h3 style={{ margin: 0, color: '#1976d2' }}>All Candidates</h3>
-                            <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>Vote for one candidate. Positions will be assigned after election ends based on vote totals.</p>
+                    <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }} ref={revealRefBottom}>
+                        <div style={{
+                            padding: '20px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            borderLeft: '5px solid #2196F3',
+                            marginBottom: '30px',
+                            borderRadius: '4px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                            <h3 style={{ margin: 0, color: '#1565c0', fontSize: '24px' }}>Candidate Profiles</h3>
+                            <p style={{ margin: '8px 0 0 0', color: '#555', fontSize: '16px' }}>
+                                Review the candidates below and cast your vote.
+                            </p>
                         </div>
-                        <Table size="small" sx={{ minWidth: 200 }} aria-label="customized table">
-                            <TableHead>
-                                <TableRow className='TableRow'>
-                                    {columns.map((column) => (
-                                        <TableCell className='table_row_heading'
-                                            key={column.id}
-                                            align={column.align}
-                                            style={{ width: column.width, minWidth: column.minWidth }}
-                                        >
-                                            {column.label}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {candidate.map((row) => (
-                                    <StyledTableRow key={row._id || row.name}>
-                                        {/* Name */}
-                                        <StyledTableCell align='left'>
-                                            {row.name}
-                                        </StyledTableCell>
-                                        {/* Position - shows assigned position if election ended, otherwise shows "TBD" */}
-                                        <StyledTableCell align='left'>
-                                            <strong style={{ color: row.position ? '#4caf50' : '#999' }}>
-                                                {row.position || 'TBD (After Election)'}
-                                            </strong>
-                                        </StyledTableCell>
-                                        {/* Department */}
-                                        <StyledTableCell align='left'>{row.party || row.department}</StyledTableCell>
-                                        {/* Bio */}
-                                        <StyledTableCell align='left'>{row.bio}</StyledTableCell>
-                                        {/* CGPA */}
-                                        <StyledTableCell align="center">{row.cgpa !== undefined ? row.cgpa : row.age || '-'}</StyledTableCell>
-                                        {/* Photo */}
-                                        <StyledTableCell align='left'>
-                                            {row.img ? (
-                                                <span className='Name-Row image'>
-                                                    <img
-                                                        alt={row.name || "Candidate"}
-                                                        src={`${BASE_URL}${row.img}`}
-                                                    />
-                                                </span>
-                                            ) : (
-                                                <span>No image</span>
+
+                        <Grid container spacing={4}>
+                            {candidate.map((row) => (
+                                <Grid item xs={12} sm={6} md={4} lg={3} key={row._id || row.name}>
+                                    <Card
+                                        sx={{
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            transition: 'transform 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-5px)',
+                                                boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                                            }
+                                        }}
+                                    >
+                                        <div style={{ position: 'relative' }}>
+                                            <CardMedia
+                                                component="img"
+                                                height="250"
+                                                image={row.img ? `${BASE_URL}${row.img}` : "https://via.placeholder.com/250?text=No+Photo"}
+                                                alt={row.name}
+                                                sx={{ objectFit: 'cover' }}
+                                            />
+                                            {row.position && (
+                                                <Chip
+                                                    label={row.position}
+                                                    color="success"
+                                                    size="small"
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        top: 10,
+                                                        right: 10,
+                                                        fontWeight: 'bold',
+                                                        backgroundColor: 'rgba(46, 125, 50, 0.9)'
+                                                    }}
+                                                />
                                             )}
-                                        </StyledTableCell>
-                                        {/* Action */}
-                                        <StyledTableCell align="right" className="voteButton">
-                                            <Button 
-                                                variant="contained" 
-                                                className="voteButton" 
+                                        </div>
+
+                                        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                                            <Typography gutterBottom variant="h5" component="div" sx={{ fontWeight: 'bold', color: '#333' }}>
+                                                {row.name}
+                                            </Typography>
+
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, color: '#666' }}>
+                                                <SchoolIcon sx={{ fontSize: 20, mr: 1, color: '#1976d2' }} />
+                                                <Typography variant="subtitle1" color="text.secondary">
+                                                    {row.party || row.department}
+                                                </Typography>
+                                            </Box>
+
+                                            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                                <Chip
+                                                    icon={<PersonIcon />}
+                                                    label={`CGPA: ${row.cgpa !== undefined ? row.cgpa : (row.age || 'N/A')}`}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    color="primary"
+                                                />
+                                            </Box>
+
+                                            <Typography variant="body2" color="text.secondary" paragraph sx={{
+                                                minHeight: '60px',
+                                                display: '-webkit-box',
+                                                overflow: 'hidden',
+                                                WebkitBoxOrient: 'vertical',
+                                                WebkitLineClamp: 3,
+                                            }}>
+                                                {row.bio ? `"${row.bio}"` : "No bio available."}
+                                            </Typography>
+                                        </CardContent>
+
+                                        <CardActions sx={{ p: 2, pt: 0 }}>
+                                            <Button
+                                                fullWidth
+                                                variant="contained"
+                                                size="large"
                                                 onClick={() => handleVote(row._id)}
                                                 disabled={
-                                                    !voter || 
-                                                    isLoadingVoter || 
+                                                    !voter ||
+                                                    isLoadingVoter ||
                                                     (voter && voter.voteStatus) ||
                                                     !isVotingActive
                                                 }
+                                                sx={{
+                                                    borderRadius: '25px',
+                                                    py: 1.5,
+                                                    fontWeight: 'bold',
+                                                    backgroundColor: !isVotingActive ? '#ccc' : '#1976d2',
+                                                    '&:hover': {
+                                                        backgroundColor: !isVotingActive ? '#ccc' : '#115293'
+                                                    }
+                                                }}
                                             >
-                                                {!isVotingActive 
-                                                    ? 'Voting Closed' 
-                                                    : voter && voter.voteStatus 
-                                                        ? 'Already Voted' 
-                                                        : 'Vote'
+                                                {!isVotingActive
+                                                    ? 'Voting Closed'
+                                                    : voter && voter.voteStatus
+                                                        ? 'Already Voted'
+                                                        : 'VOTE'
                                                 }
                                             </Button>
-                                        </StyledTableCell>
-                                    </StyledTableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                        </CardActions>
+                                    </Card>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Container>
                 ) : (
-                    <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#fff3cd', borderRadius: '8px', marginTop: '20px' }}>
-                        <p style={{ fontSize: '18px', color: '#856404' }}>No candidates registered yet.</p>
+                    <div style={{ padding: '40px', textAlign: 'center', backgroundColor: 'rgba(255,243,205,0.9)', borderRadius: '8px', margin: '20px auto', maxWidth: '600px' }}>
+                        <p style={{ fontSize: '18px', color: '#856404', margin: 0 }}>No candidates registered yet.</p>
                     </div>
                 )}
             </div>

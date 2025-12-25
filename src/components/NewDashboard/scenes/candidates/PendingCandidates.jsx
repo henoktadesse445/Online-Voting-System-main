@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, useTheme, Button, Chip } from "@mui/material";
+import { Box, Typography, useTheme, Button, Chip, Avatar, Tooltip, IconButton } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
 import { CssBaseline, ThemeProvider } from "@mui/material";
@@ -7,6 +7,7 @@ import { ColorModeContext, useMode } from "../../theme";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DescriptionIcon from "@mui/icons-material/Description";
+import RefreshIcon from '@mui/icons-material/Refresh';
 import Header from "../../newComponents/Header";
 import Topbar from "../global/Topbar";
 import Sidebar from "../global/Sidebar";
@@ -32,7 +33,7 @@ const PendingCandidates = () => {
     const fetchPendingCandidates = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${BASE_URL}/api/pendingCandidates`);
+            const response = await axios.get(`${BASE_URL}/api/pendingCandidates?t=${new Date().getTime()}`);
             if (response.data.success) {
                 setPendingCandidates(response.data.candidates);
             }
@@ -52,8 +53,8 @@ const PendingCandidates = () => {
         try {
             const response = await axios.post(`${BASE_URL}/api/approveCandidate/${id}`);
             if (response.data.success) {
-                showSuccessToast(`Candidate ${name} has been approved!`);
-                fetchPendingCandidates(); // Refresh the list
+                showSuccessToast(`✅ ${name} has been approved!`);
+                fetchPendingCandidates();
             } else {
                 showErrorToast(response.data.message || "Failed to approve candidate");
             }
@@ -70,8 +71,8 @@ const PendingCandidates = () => {
         try {
             const response = await axios.post(`${BASE_URL}/api/rejectCandidate/${id}`);
             if (response.data.success) {
-                showSuccessToast(`Candidate ${name} has been rejected.`);
-                fetchPendingCandidates(); // Refresh the list
+                showSuccessToast(`❌ ${name} has been rejected.`);
+                fetchPendingCandidates();
             } else {
                 showErrorToast(response.data.message || "Failed to reject candidate");
             }
@@ -85,74 +86,139 @@ const PendingCandidates = () => {
         {
             field: "img",
             headerName: "PHOTO",
-            width: 100,
-            renderCell: ({ row: { img } }) => {
+            flex: 0.5,
+            minWidth: 80,
+            renderCell: ({ row: { img, name } }) => {
+                const photoUrl = img ? `${BASE_URL}${img}` : null;
                 return (
                     <Box
-                        width="60%"
-                        m="0 auto"
-                        p="5px"
+                        width="100%"
                         display="flex"
                         justifyContent="center"
+                        alignItems="center"
+                        p="5px"
                     >
-                        {img ? (
-                            <img
-                                src={`${BASE_URL}${img}`}
-                                alt="Candidate"
-                                style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '50%' }}
-                            />
-                        ) : (
-                            <span>No image</span>
-                        )}
+                        <Avatar
+                            src={photoUrl}
+                            alt={name || "Candidate"}
+                            sx={{
+                                width: 50,
+                                height: 50,
+                                border: `2px solid ${colors.primary[300]}`,
+                                backgroundColor: photoUrl ? 'transparent' : colors.primary[400],
+                                color: colors.grey[100],
+                                fontSize: '18px',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            {!photoUrl && (name ? name.charAt(0).toUpperCase() : '?')}
+                        </Avatar>
                     </Box>
                 );
             },
         },
         {
             field: "name",
-            headerName: "CANDIDATE NAME",
+            headerName: "NAME",
             flex: 1,
-            cellClassName: "name-column--cell",
+            minWidth: 150,
+            renderCell: ({ row: { name } }) => (
+                <Typography
+                    variant="body1"
+                    fontWeight="600"
+                    color={colors.greenAccent[300]}
+                >
+                    {name || 'N/A'}
+                </Typography>
+            ),
         },
         {
             field: "email",
             headerName: "EMAIL",
-            flex: 1,
-            cellClassName: "name-column--cell",
+            flex: 1.2,
+            minWidth: 180,
+            renderCell: ({ row: { email } }) => (
+                <Typography variant="body2" color={colors.grey[100]}>
+                    {email || 'N/A'}
+                </Typography>
+            ),
         },
         {
             field: "voterId",
             headerName: "STUDENT ID",
-            flex: 1,
+            flex: 0.8,
+            minWidth: 120,
+            renderCell: ({ row: { voterId } }) => (
+                <Typography variant="body2" color={colors.grey[100]}>
+                    {voterId || 'N/A'}
+                </Typography>
+            ),
         },
         {
             field: "department",
             headerName: "DEPARTMENT",
             flex: 1,
+            minWidth: 150,
+            renderCell: ({ row: { department } }) => (
+                <Typography variant="body2" color={colors.grey[100]}>
+                    {department || 'N/A'}
+                </Typography>
+            ),
         },
         {
             field: "bio",
             headerName: "BIO",
             flex: 1.5,
-            cellClassName: "name-column--cell",
+            minWidth: 200,
+            renderCell: ({ row: { bio } }) => {
+                const bioText = bio || 'No bio provided';
+                const truncatedBio = bioText.length > 80 ? `${bioText.substring(0, 80)}...` : bioText;
+
+                return (
+                    <Tooltip title={bioText} arrow placement="top">
+                        <Typography
+                            variant="body2"
+                            color={colors.grey[100]}
+                            sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    color: colors.greenAccent[400]
+                                }
+                            }}
+                        >
+                            {truncatedBio}
+                        </Typography>
+                    </Tooltip>
+                );
+            },
         },
         {
             field: "cgpa",
             headerName: "CGPA",
-            width: 100,
+            flex: 0.5,
+            minWidth: 80,
             type: "number",
+            headerAlign: "center",
+            align: "center",
+            renderCell: ({ row: { cgpa } }) => (
+                <Typography variant="body2" color={colors.grey[100]} fontWeight="600">
+                    {cgpa || 'N/A'}
+                </Typography>
+            ),
         },
         {
             field: "createdAt",
-            headerName: "APPLIED DATE",
-            flex: 1,
+            headerName: "APPLIED",
+            flex: 0.8,
+            minWidth: 120,
             renderCell: ({ row: { createdAt, _id } }) => {
                 let dateToUse = createdAt;
 
-                // If createdAt doesn't exist, extract date from MongoDB _id (which contains creation timestamp)
                 if (!dateToUse && _id) {
                     try {
-                        // Extract timestamp from MongoDB ObjectId (first 8 characters are timestamp)
                         const timestamp = parseInt(_id.substring(0, 8), 16) * 1000;
                         dateToUse = new Date(timestamp);
                     } catch (error) {
@@ -167,13 +233,17 @@ const PendingCandidates = () => {
                 try {
                     const date = new Date(dateToUse);
                     if (isNaN(date.getTime())) {
-                        return <Typography variant="body2" color={colors.grey[500]}>Invalid Date</Typography>;
+                        return <Typography variant="body2" color={colors.grey[500]}>Invalid</Typography>;
                     }
-                    return date.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    });
+                    return (
+                        <Typography variant="body2" color={colors.grey[100]}>
+                            {date.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                            })}
+                        </Typography>
+                    );
                 } catch (error) {
                     return <Typography variant="body2" color={colors.grey[500]}>N/A</Typography>;
                 }
@@ -182,14 +252,17 @@ const PendingCandidates = () => {
         {
             field: "status",
             headerName: "STATUS",
-            width: 120,
+            flex: 0.6,
+            minWidth: 100,
             renderCell: () => {
                 return (
                     <Chip
                         label="Pending"
+                        size="small"
                         sx={{
                             backgroundColor: colors.blueAccent[700],
                             color: colors.grey[100],
+                            fontWeight: 'bold',
                         }}
                     />
                 );
@@ -198,10 +271,12 @@ const PendingCandidates = () => {
         {
             field: "documents",
             headerName: "DOCUMENTS",
-            flex: 1.2,
+            flex: 1,
+            minWidth: 150,
+            sortable: false,
             renderCell: ({ row }) => {
                 return (
-                    <Box display="flex" gap="5px">
+                    <Box display="flex" gap={1} flexWrap="wrap">
                         {row.symbol && (
                             <Button
                                 variant="outlined"
@@ -211,9 +286,11 @@ const PendingCandidates = () => {
                                 sx={{
                                     borderColor: colors.blueAccent[600],
                                     color: colors.blueAccent[600],
+                                    fontSize: '11px',
+                                    padding: '4px 8px',
                                     '&:hover': {
                                         borderColor: colors.blueAccent[700],
-                                        backgroundColor: colors.blueAccent[50],
+                                        backgroundColor: 'rgba(104, 112, 250, 0.1)',
                                     },
                                 }}
                             >
@@ -227,11 +304,13 @@ const PendingCandidates = () => {
                                 size="small"
                                 onClick={() => window.open(`${BASE_URL}${row.authenticatedDocument}`, '_blank')}
                                 sx={{
-                                    borderColor: colors.orangeAccent?.[600] || colors.blueAccent[600],
-                                    color: colors.orangeAccent?.[600] || colors.blueAccent[600],
+                                    borderColor: colors.greenAccent[600],
+                                    color: colors.greenAccent[600],
+                                    fontSize: '11px',
+                                    padding: '4px 8px',
                                     '&:hover': {
-                                        borderColor: colors.orangeAccent?.[700] || colors.blueAccent[700],
-                                        backgroundColor: colors.orangeAccent?.[50] || colors.blueAccent[50],
+                                        borderColor: colors.greenAccent[700],
+                                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
                                     },
                                 }}
                             >
@@ -239,8 +318,8 @@ const PendingCandidates = () => {
                             </Button>
                         )}
                         {!row.symbol && !row.authenticatedDocument && (
-                            <Typography variant="body2" color={colors.grey[500]}>
-                                No documents
+                            <Typography variant="body2" color={colors.grey[500]} fontSize="12px">
+                                None
                             </Typography>
                         )}
                     </Box>
@@ -250,37 +329,45 @@ const PendingCandidates = () => {
         {
             field: "actions",
             headerName: "ACTIONS",
-            flex: 1.5,
+            flex: 1.2,
+            minWidth: 180,
+            sortable: false,
             renderCell: ({ row }) => {
                 return (
-                    <Box display="flex" gap="10px">
+                    <Box display="flex" gap={1} width="100%">
                         <Button
                             variant="contained"
                             startIcon={<CheckCircleIcon />}
+                            size="small"
+                            onClick={() => handleApprove(row._id, row.name)}
                             sx={{
                                 backgroundColor: colors.greenAccent[600],
                                 color: 'white',
+                                fontWeight: 'bold',
+                                fontSize: '12px',
+                                padding: '6px 12px',
                                 '&:hover': {
                                     backgroundColor: colors.greenAccent[700],
                                 },
                             }}
-                            onClick={() => handleApprove(row._id, row.name)}
-                            size="small"
                         >
                             Approve
                         </Button>
                         <Button
                             variant="contained"
                             startIcon={<CancelIcon />}
+                            size="small"
+                            onClick={() => handleReject(row._id, row.name)}
                             sx={{
                                 backgroundColor: colors.redAccent[600],
                                 color: 'white',
+                                fontWeight: 'bold',
+                                fontSize: '12px',
+                                padding: '6px 12px',
                                 '&:hover': {
                                     backgroundColor: colors.redAccent[700],
                                 },
                             }}
-                            onClick={() => handleReject(row._id, row.name)}
-                            size="small"
                         >
                             Reject
                         </Button>
@@ -298,28 +385,56 @@ const PendingCandidates = () => {
                     <Sidebar />
                     <main className="content">
                         <Topbar />
-                        <ToastContainer />
+                        <ToastContainer position="top-right" autoClose={3000} />
                         <Box m="0px 20px">
-                            <Header
-                                title="PENDING CANDIDATE APPLICATIONS"
-                                subtitle="Review and approve candidate registrations"
-                            />
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb="10px">
+                                <Header
+                                    title="PENDING CANDIDATE APPLICATIONS"
+                                    subtitle="Review and approve candidate registrations"
+                                />
+                                <IconButton
+                                    onClick={fetchPendingCandidates}
+                                    disabled={loading}
+                                    sx={{
+                                        backgroundColor: colors.blueAccent[700],
+                                        color: colors.grey[100],
+                                        '&:hover': {
+                                            backgroundColor: colors.blueAccent[600],
+                                        },
+                                        '&:disabled': {
+                                            backgroundColor: colors.grey[800],
+                                            color: colors.grey[600],
+                                        }
+                                    }}
+                                    title="Refresh pending applications"
+                                >
+                                    <RefreshIcon />
+                                </IconButton>
+                            </Box>
                             <Box
                                 m="20px 0 0 0"
-                                height="75vh"
+                                height="72vh"
                                 sx={{
                                     "& .MuiDataGrid-root": {
                                         border: "none",
+                                        borderRadius: "16px",
+                                        overflow: "hidden",
+                                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                                     },
                                     "& .MuiDataGrid-cell": {
-                                        borderBottom: "none",
+                                        borderBottom: `1px solid ${colors.primary[500]}`,
+                                        display: 'flex',
+                                        alignItems: 'center',
                                     },
                                     "& .name-column--cell": {
                                         color: colors.greenAccent[300],
+                                        fontWeight: "600",
                                     },
                                     "& .MuiDataGrid-columnHeaders": {
                                         backgroundColor: colors.blueAccent[700],
                                         borderBottom: "none",
+                                        fontSize: "13px",
+                                        fontWeight: "bold",
                                     },
                                     "& .MuiDataGrid-virtualScroller": {
                                         backgroundColor: colors.primary[400],
@@ -331,6 +446,9 @@ const PendingCandidates = () => {
                                     "& .MuiCheckbox-root": {
                                         color: `${colors.greenAccent[200]} !important`,
                                     },
+                                    "& .MuiDataGrid-row:hover": {
+                                        backgroundColor: "rgba(104, 112, 250, 0.05)",
+                                    },
                                 }}
                             >
                                 {pendingCandidates.length === 0 && !loading ? (
@@ -340,11 +458,16 @@ const PendingCandidates = () => {
                                         alignItems="center"
                                         height="100%"
                                         flexDirection="column"
+                                        sx={{
+                                            backgroundColor: colors.primary[400],
+                                            borderRadius: "16px",
+                                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                                        }}
                                     >
-                                        <Typography variant="h4" color={colors.grey[300]}>
-                                            No pending applications
+                                        <Typography variant="h3" color={colors.grey[300]} fontWeight="bold">
+                                            No Pending Applications
                                         </Typography>
-                                        <Typography variant="h6" color={colors.grey[500]} sx={{ mt: 1 }}>
+                                        <Typography variant="h6" color={colors.grey[500]} sx={{ mt: 2 }}>
                                             All candidate applications have been reviewed.
                                         </Typography>
                                     </Box>
@@ -355,6 +478,13 @@ const PendingCandidates = () => {
                                         getRowId={(row) => row._id}
                                         loading={loading}
                                         disableRowSelectionOnClick
+                                        initialState={{
+                                            pagination: {
+                                                paginationModel: { pageSize: 10 },
+                                            },
+                                        }}
+                                        pageSizeOptions={[5, 10, 25, 50]}
+                                        rowHeight={70}
                                     />
                                 )}
                             </Box>

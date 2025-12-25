@@ -1,6 +1,6 @@
 import './CSS/about.css'
 import AboutImage from './Images/voting7.jpg'
-import {useEffect, React, useRef } from 'react';
+import { useEffect, React, useRef } from 'react';
 import ScrollReveal from "scrollreveal";
 
 
@@ -12,9 +12,9 @@ const About = () => {
 
     useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefBottom.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -25,9 +25,9 @@ const About = () => {
     }, []);
     useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefRight.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -37,9 +37,9 @@ const About = () => {
         });
     }, []); useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefLeft.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -49,9 +49,9 @@ const About = () => {
         });
     }, []); useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefTop.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -69,7 +69,7 @@ const About = () => {
                     <br></br>
 
                     <p>
-                    We're delighted to have you join us in shaping the future through the power of your vote. Our online voting platform has been designed to make the voting process convenient, secure, and accessible to all eligible participants. Whether you're casting your vote for local elections, national initiatives, or organizational decisions, your voice matters.
+                        We're delighted to have you join us in shaping the future through the power of your vote. Our online voting platform has been designed to make the voting process convenient, secure, and accessible to all eligible participants. Whether you're casting your vote for local elections, national initiatives, or organizational decisions, your voice matters.
                     </p>
 
                 </div>

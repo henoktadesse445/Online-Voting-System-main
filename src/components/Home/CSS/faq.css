@@ -1,46 +1,34 @@
-.FAQ{
-    /* border: 1px solid red; */
-    margin: 1.5rem auto;
-    padding: 0.5rem;
-    justify-content: center;
-    align-items: center;
+.FAQ {
+    padding: 80px 20px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.FAQ h2 {
     text-align: center;
-    overflow: hidden;
-
+    margin-bottom: 50px;
+    font-size: 2.5rem;
 }
 
-.FAQ h2{
-    margin: 2rem auto;
-    color: #89c4ee;
-    justify-content: center;
-    align-items: center;
-    align-items: center;
-    
-}
-.FAQ .Questions{
-    /* border: 1px solid green; */
-    padding: 1rem 2rem;
-    margin: 1rem;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+.Questions {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-.FAQ .Questions .accordian{
-    /* border: 1px solid blue; */
-    background-color: whitesmoke;
-    width: 80%;
-    color:black;
-    padding: 1rem;
-    margin: 1.5rem auto;
-    border-radius: 1rem;
+.accordian {
+    margin-bottom: 10px !important;
+    box-shadow: none !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    background-color: var(--bg-card) !important;
 }
 
-.FAQ .Questions .accordian .heading{
-    color: black;
-    font-weight: bold;
+.heading {
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
 }
 
-.FAQ .Questions .accordian .answer{
-    color: black;
+.answer {
+    color: var(--text-secondary);
+    line-height: 1.6;
 }

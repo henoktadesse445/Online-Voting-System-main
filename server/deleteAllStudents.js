@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const StudentList = require('./models/StudentList');
+const User = require('./models/User');
+const OTP = require('./models/OTP');
 
 // Function to delete all students from the database
 async function deleteAllStudents() {
@@ -28,15 +30,18 @@ async function deleteAllStudents() {
         // Wait 3 seconds for user to cancel
         await new Promise(resolve => setTimeout(resolve, 3000));
 
-        // Delete all students in one operation
-        console.log('🗑️  Deleting all students...');
+        // Delete all students, voters, and OTPs
+        console.log('🗑️  Deleting all students, voters, and OTP records...');
         const result = await StudentList.deleteMany({});
+        const userResult = await User.deleteMany({ role: { $in: ['voter', undefined, null] } });
+        await OTP.deleteMany({});
 
         // Summary
         console.log('\n' + '='.repeat(50));
         console.log('📊 DELETION SUMMARY');
         console.log('='.repeat(50));
         console.log(`✅ Successfully deleted: ${result.deletedCount} students`);
+        console.log(`✅ Successfully deleted associated voter accounts: ${userResult.deletedCount}`);
         console.log('='.repeat(50));
 
         // Close connection

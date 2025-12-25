@@ -17,9 +17,9 @@ export default function FAQ() {
 
     useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefBottom.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -30,9 +30,9 @@ export default function FAQ() {
     }, []);
     useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefRight.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -42,9 +42,9 @@ export default function FAQ() {
         });
     }, []); useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefLeft.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',
@@ -54,9 +54,9 @@ export default function FAQ() {
         });
     }, []); useEffect(() => {
 
-        
+
         ScrollReveal().reveal(revealRefTop.current, {
-            
+
             duration: 1000,
             delay: 200,
             distance: '50px',

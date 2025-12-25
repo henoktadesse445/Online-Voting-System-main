@@ -1,3 +1,43 @@
+# Dependencies
 node_modules/
 
+# Environment variables
 .env
+
+# Build output
+/build
+/dist
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+server-log.txt
+
+# Debug files
+debug_*.json
+
+# Reports and PDFs
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Server uploads
+server/uploads/
+
+# Certificates and keys
+*.pem
+*.key
+*.cert
+auth_key.json

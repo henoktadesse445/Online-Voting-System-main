@@ -49,13 +49,13 @@ const Result = () => {
 
     return (
         <ColorModeContext.Provider value={colorMode}>
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <div className="appNew">
-                <Sidebar />
-                <main className="content">
-                    <Topbar />
-                    <Box m="20px">
+            <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <div className="appNew">
+                    <Sidebar />
+                    <main className="content">
+                        <Topbar />
+                        <Box m="20px">
                             <Box display="flex" alignItems="center" gap={2} mb={2}>
                                 <IconButton
                                     onClick={() => navigate('/Admin')}
@@ -69,7 +69,7 @@ const Result = () => {
                                 >
                                     <ArrowBackIcon />
                                 </IconButton>
-                        <Header title="RESULTS" subtitle="Election Result" />
+                                <Header title="RESULTS" subtitle="Election Result" />
                             </Box>
 
                             {/* Summary Cards */}
@@ -121,7 +121,7 @@ const Result = () => {
                                     Votes Distribution Chart
                                 </Typography>
                                 <Box height="60vh">
-                            <BarChart />
+                                    <BarChart />
                                 </Box>
                             </Paper>
 
@@ -173,7 +173,7 @@ const Result = () => {
                                             ) : (
                                                 candidates.map((candidate, index) => {
                                                     const votes = candidate.votes || 0;
-                                                    const percentage = totalVotes > 0 
+                                                    const percentage = totalVotes > 0
                                                         ? (votes / totalVotes * 100).toFixed(1)
                                                         : 0;
                                                     return (
@@ -183,11 +183,11 @@ const Result = () => {
                                                                     label={index + 1}
                                                                     size="small"
                                                                     sx={{
-                                                                        backgroundColor: 
+                                                                        backgroundColor:
                                                                             index === 0 ? colors.greenAccent[600] :
-                                                                            index === 1 ? colors.blueAccent[600] :
-                                                                            index === 2 ? colors.redAccent[500] :
-                                                                            colors.grey[700],
+                                                                                index === 1 ? colors.blueAccent[600] :
+                                                                                    index === 2 ? colors.redAccent[500] :
+                                                                                        colors.grey[700],
                                                                         color: colors.grey[100],
                                                                         fontWeight: 'bold',
                                                                     }}
@@ -213,11 +213,11 @@ const Result = () => {
                                     </Table>
                                 </TableContainer>
                             </Paper>
-                    </Box>
-                </main>
-            </div>
-        </ThemeProvider>
-    </ColorModeContext.Provider>
+                        </Box>
+                    </main>
+                </div>
+            </ThemeProvider>
+        </ColorModeContext.Provider>
     );
 };
 

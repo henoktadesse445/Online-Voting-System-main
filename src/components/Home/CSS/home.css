@@ -1,32 +1,19 @@
-
-.Home{
+.Home {
     padding: 0rem;
-    /* background-color: rgba(223, 223, 226, 0.529); */
-    background-color: black;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     align-items: center;
     justify-content: center;
     overflow: hidden;
-
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
-.Home-content{
-    /* border:1px solid blue; */
+
+.Home-content {
     border-radius: 0.1rem;
     margin: 0rem auto;
     padding: 0rem;
-    background-color: black;
+    background-color: var(--bg-primary);
     width: 100%;
-    
-}
-.Home-content img{
-    width: 100%;
-    height: 100%;
-}
-.light-mode .Home {
-    background-color: #f8f9fa;
-}
-
-.light-mode .Home-content {
-    background-color: #f8f9fa;
 }
 
 .light-mode .About-Content .textAbout p {

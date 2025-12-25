@@ -1,12 +1,12 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import './App.css';
+import { ColorModeContext, useMode } from './components/NewDashboard/theme';
+import { CssBaseline, ThemeProvider } from "@mui/material";
 const Home = lazy(() => import('./components/Home/Home'));
 const AdminLogin = lazy(() => import('./components/Sign/AdminLogin'));
 const Login = lazy(() => import('./components/Sign/Login'));
 const User = lazy(() => import('./components/User/User'));
-// const Signup = lazy(() => import('./components/Sign/Signup')); // DISABLED - User registration removed
-const NewVoters = lazy(() => import('./components/NewDashboard/scenes/voters/NewVoters'));
 const Vote = lazy(() => import('./components/User/Components/Voter/Vote'));
 const EditProfile = lazy(() => import('./components/User/Components/EditProfile/EditProfile'));
 const ElectionResults = lazy(() => import('./components/User/Components/Results/ElectionResults'));
@@ -23,7 +23,8 @@ const CandidateRegister = lazy(() => import('./components/Sign/CandidateRegister
 const StudentListUpload = lazy(() => import('./components/NewDashboard/scenes/students/StudentListUpload'));
 const StudentListInfo = lazy(() => import('./components/NewDashboard/scenes/students/StudentListInfo'));
 const VotingReport = lazy(() => import('./components/NewDashboard/scenes/report/VotingReport'));
-const OTPDistribution = lazy(() => import('./components/NewDashboard/scenes/otp/OTPDistribution'));
+
+const ElectionHistory = lazy(() => import('./components/NewDashboard/scenes/history/ElectionHistory'));
 
 const Routing = () => {
 
@@ -31,14 +32,12 @@ const Routing = () => {
     <Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>}>
       <Routes>
         <Route exact path="/" element={<Home />} />
-        {/* <Route path='/Signup' element = {<Signup/>} /> */} {/* DISABLED - User registration removed */}
         <Route path="/Login" element={<Login />} />
         <Route path="/AdminLogin" element={<AdminLogin />} />
         <Route path="/Admin" element={<New />} />
         <Route path="/LineChart" element={<Line />} />
         <Route path="/BarChart" element={<Result />} />
         <Route path="/PieChart" element={<Pie />} />
-        <Route path="/Voters" element={<NewVoters />} />
         <Route path="/Candidate" element={<NewCandidates />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/Edit" element={<EditProfile />} />
@@ -52,7 +51,8 @@ const Routing = () => {
 
         <Route path="/studentListInfo" element={<StudentListInfo />} />
         <Route path="/votingReport" element={<VotingReport />} />
-        <Route path="/otpDistribution" element={<OTPDistribution />} />
+
+        <Route path="/electionHistory" element={<ElectionHistory />} />
         <Route path="/upcoming" element={<Navigate to="/votingSettings" replace />} />
       </Routes>
     </Suspense>
@@ -60,6 +60,8 @@ const Routing = () => {
 }
 
 function App() {
+  const [theme, colorMode] = useMode();
+
   // ⚡ Performance Optimization: Prefetch common routes on idle
   React.useEffect(() => {
     const prefetchRoutes = () => {
@@ -77,9 +79,14 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routing />
-    </BrowserRouter>
+    <ColorModeContext.Provider value={colorMode}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BrowserRouter>
+          <Routing />
+        </BrowserRouter>
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 }
 

@@ -1,54 +1,279 @@
-.Candidatesignup {
-    /* border: 1px solid red; */
-    margin: 0rem;
-    height: 50%;
-    padding: 0rem;
-    /* display: inline-flex;
-     */
-  }
+/* Candidate Registration Page - Modern Redesign */
 
-.Candidatesignup .container{
-    /* border: 1px solid green; */
-    border-radius: 0;
-    padding: 0rem;
-    margin: 0rem;
-    width: 100%;
-    height: 50vh;
+.candidate-register-section {
+    min-height: calc(100vh - 80px);
+    /* Adjust based on navbar height */
+    padding: 40px 20px;
+    background-color: var(--bg-secondary);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }
-.Candidatesignup .FormTitle{
+
+.candidate-register-wrapper {
     width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.candidate-register-card {
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    padding: 40px;
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Header */
+.form-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.form-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Status Boxes */
+.status-box,
+.info-box {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.status-box.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    text-align: center;
+}
+
+.status-box.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.info-box.info {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+.info-box.primary {
+    background-color: rgba(79, 70, 229, 0.1);
+    /* Based on accent color */
+    color: var(--accent-color);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+/* Action Link */
+.action-link {
+    color: var(--accent-color);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+/* User Profile Summary */
+.user-profile-summary {
+    background-color: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+}
+
+.user-profile-summary h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-item .label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.profile-item .value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.note {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 15px;
+    font-style: italic;
+}
+
+/* Form Fields */
+.form-field {
+    margin-bottom: 25px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.form-field label {
     display: block;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-.Candidatesignup .container .signup-form{
-    /* border: 1px solid blue; */
-    margin: 0;
-    padding: 0rem;
-    width: 100%;
-    /* display:flex; */
-    height: 50vh;
-}
-.Candidatesignup .signup-content{
-    padding: 0rem;
-}
-.Candidatesignup .container .signup-form .register-form{
-    /* border: 1px solid orange; */
-    width: 100%;
-    margin: 0rem;
-    padding: 0rem;
-    height: 50vh;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    overflow-y: scroll;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
-.Candidatesignup .container .signup-form .register-form .form-group{
-    /* border: 1px solid black; */
+.required {
+    color: #e02424;
+}
+
+.form-field textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    resize: vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    box-sizing: border-box;
+    /* Important for padding */
+}
+
+.form-field textarea:focus {
+    border-color: var(--accent-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-field small {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.form-field small.error-text {
+    color: #e02424;
+}
+
+/* File Input Styling */
+.file-input-wrapper input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.file-input-wrapper input[type="file"]:hover {
+    border-color: var(--accent-color);
+}
+
+/* Submit Button */
+.form-actions {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.btn-submit {
+    background-color: var(--accent-color);
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    width: 100%;
+    max-width: 300px;
     display: inline-flex;
-    margin: 0.6rem 0.5rem;
-    /* padding: 0rem 0.5rem; */
-    width: 40%;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background-color: #4338ca;
+    /* Darker shade of accent */
+    transform: translateY(-1px);
+}
+
+.btn-submit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-submit:disabled {
+    background-color: #a5a5a5;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Spinner */
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .candidate-register-card {
+        padding: 25px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
 }

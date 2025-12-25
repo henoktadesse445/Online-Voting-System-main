@@ -327,6 +327,39 @@ const Login = () => {
         await handleRequestPasswordReset({ preventDefault: () => { } });
     };
 
+    const handleResendLoginOTP = async () => {
+        if (!username) {
+            toast.error("Please enter your Student ID or Email first", {
+                className: "toast-message",
+            });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await axios.post(`${BASE_URL}/resendOTP`, {
+                username: username
+            });
+
+            if (response.data.success) {
+                toast.success(response.data.message || "OTP resent successfully. Please check your email.", {
+                    className: "toast-message",
+                });
+            } else {
+                toast.error(response.data.message, {
+                    className: "toast-message",
+                });
+            }
+        } catch (error) {
+            console.error('Resend OTP failed:', error);
+            toast.error(error.response?.data?.message || "Error resending OTP. Please try again later.", {
+                className: "toast-message",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div >
             <Nav_bar />
@@ -374,18 +407,17 @@ const Login = () => {
                                         {loading ? <div className="spinner"></div> : 'Login'}
                                     </button>
                                 </div>
-                                <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                                <div className="action-buttons-container">
+                                    <button
+                                        type="button"
+                                        onClick={handleResendLoginOTP}
+                                        disabled={loading}
+                                    >
+                                        Resend OTP?
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => setShowForgotPasswordModal(true)}
-                                        style={{
-                                            background: 'transparent',
-                                            border: 'none',
-                                            color: '#3498db',
-                                            cursor: 'pointer',
-                                            textDecoration: 'underline',
-                                            fontSize: '14px'
-                                        }}
                                     >
                                         Forgot Password?
                                     </button>
@@ -514,7 +546,7 @@ const Login = () => {
                                         </button>
                                     </div>
 
-                                    <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                                    <div className="action-buttons-container" style={{ justifyContent: 'center' }}>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -522,13 +554,7 @@ const Login = () => {
                                                 setResetStep(1);
                                                 setResetUsername('');
                                             }}
-                                            style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: '#666',
-                                                cursor: 'pointer',
-                                                fontSize: '14px'
-                                            }}
+                                            style={{ color: '#666' }}
                                         >
                                             Cancel
                                         </button>
@@ -567,36 +593,21 @@ const Login = () => {
                                         </button>
                                     </div>
 
-                                    <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                                    <div className="action-buttons-container">
                                         <button
                                             type="button"
                                             onClick={handleResendResetOTP}
                                             disabled={loading}
-                                            style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: '#3498db',
-                                                cursor: 'pointer',
-                                                textDecoration: 'underline',
-                                                fontSize: '14px'
-                                            }}
                                         >
                                             Resend OTP
                                         </button>
-                                        <span style={{ margin: '0 10px' }}>|</span>
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setResetStep(1);
                                                 setResetOTP('');
                                             }}
-                                            style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: '#666',
-                                                cursor: 'pointer',
-                                                fontSize: '14px'
-                                            }}
+                                            style={{ color: '#666' }}
                                         >
                                             Change Student ID
                                         </button>

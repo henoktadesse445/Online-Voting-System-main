@@ -1,4 +1,4 @@
-.User-Card{
+.User-Card {
 
     border-radius: 1rem;
     margin: 0.5rem;
@@ -9,7 +9,8 @@
     background-color: whitesmoke;
 
 }
-.userImage{
+
+.userImage {
     justify-content: center;
     text-align: center;
     align-items: center;
@@ -22,7 +23,7 @@
     cursor: pointer;
 }
 
-.userImage img{
+.userImage img {
     width: 150px;
     height: 150px;
     border-radius: 50%;
@@ -69,20 +70,25 @@
     font-weight: 600;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
-.userDetails1{
+
+.userDetails1 {
     border: none;
 }
-.userDetails1 p{
+
+.userDetails1 p {
     color: black;
     margin: 1.2rem 0rem;
     font-size: 20rem;
 }
-.userDetails1 p h6{
+
+.userDetails1 p h6 {
     font-size: 0.8rem;
 }
-.userDetails1 .notVoted{
+
+.userDetails1 .notVoted {
     color: red;
 }
-.userDetails1 .Voted{
+
+.userDetails1 .Voted {
     color: green;
 }

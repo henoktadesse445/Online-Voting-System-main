@@ -21,11 +21,11 @@ const Pie = () => {
                         <Box m="20px">
                             <Header title="Voters According to Age Group" />
                             <Box height="71vh" mt="30px">
-                                <VoterbyAge/>
+                                <VoterbyAge />
                             </Box>
                         </Box>
                         <Box m="20px">
-                            <Header title="Voters from Different States"  />
+                            <Header title="Voters from Different States" />
                             <Box height="71vh" mt="30px">
                                 <VoterbyState />
                             </Box>

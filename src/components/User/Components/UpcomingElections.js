@@ -1,87 +1,88 @@
-import { useEffect, React, useRef} from 'react';
+import { useEffect, React, useRef } from 'react';
 import ScrollReveal from "scrollreveal";
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Grid
+} from '@mui/material';
+import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
-import "../CSS/upcomingElections.css"
-const UpcomingElections = ({voteStatus})=>{
-    const navigate = useNavigate();
-   
-    // const handleButtonClick = () => {
-    //     if (voteStatus) {
-    //         alert("You Have Already Voted");
-    //     } else {
-    //         navigate('/Vote')
-    //     }
-    //   };
-    
-    const revealRefBottom = useRef(null);
-    const revealRefLeft = useRef(null);  
-    const revealRefTop = useRef(null);
-    const revealRefRight = useRef(null);
-  
-    useEffect(() => {
-    
-      // Initialize ScrollReveal
-      ScrollReveal().reveal(revealRefBottom.current, {
-        // You can configure options here
-        duration: 1000,
-        delay: 200,
-        distance: '50px',
-        origin: 'bottom',
-        easing: 'ease',
-        reset: 'true',
-      });
-    }, []);
-    useEffect(() => {
-    
-      // Initialize ScrollReveal
-      ScrollReveal().reveal(revealRefRight.current, {
-        // You can configure options here
-        duration: 1000,
-        delay: 200,
-        distance: '50px',
-        origin: 'right',
-        easing: 'ease',
-        reset: 'true',
-      });
-    }, []);  useEffect(() => {
-    
-      // Initialize ScrollReveal
-      ScrollReveal().reveal(revealRefLeft.current, {
-        // You can configure options here
-        duration: 1000,
-        delay: 200,
-        distance: '50px',
-        origin: 'left',
-        easing: 'ease',
-        reset: 'true',
-      });
-    }, []);  useEffect(() => {
-    
-      // Initialize ScrollReveal
-      ScrollReveal().reveal(revealRefTop.current, {
-        // You can configure options here
-        duration: 1000,
-        delay: 200,
-        distance: '50px',
-        origin: 'top',
-        easing: 'ease',
-        reset: 'true',
-      });
-    }, []); 
-    return(
-        <div className="upcomingElections">
-            <h2 ref={revealRefTop}>Upcoming Elections</h2>
- 
-            <div className="upcomingElectionsCardContainer">
-                <div className="upcomingElectionCard" ref={revealRefLeft}>
-                    <h3>WCU Student President Election</h3><br/>
-                    <p>Vote to elect the Wachemo University Student President. Ensure you are registered and eligible to participate in this campus election.</p><br/>
-                    <button><a href='/Vote'>Participate/Vote</a></button>
-                </div>
+// import "../CSS/upcomingElections.css" // Removing custom CSS
 
-            </div>
-        </div>
-    )
+const UpcomingElections = ({ voteStatus }) => {
+  const navigate = useNavigate();
+
+  const revealRefBottom = useRef(null);
+  const revealRefLeft = useRef(null);
+  const revealRefTop = useRef(null);
+
+  useEffect(() => {
+    const sr = ScrollReveal({
+      duration: 800,
+      delay: 100,
+      distance: '30px',
+      easing: 'ease',
+      reset: false
+    });
+
+    if (revealRefBottom.current) sr.reveal(revealRefBottom.current, { origin: 'bottom' });
+    if (revealRefLeft.current) sr.reveal(revealRefLeft.current, { origin: 'left' });
+    if (revealRefTop.current) sr.reveal(revealRefTop.current, { origin: 'top' });
+  }, []);
+
+  return (
+    <Box sx={{ mt: 4, mb: 4 }} className="upcomingElections">
+      <Typography variant="h4" component="h2" align="center" gutterBottom sx={{ color: '#333', mb: 3 }} ref={revealRefTop}>
+        Upcoming Elections
+      </Typography>
+
+      <Grid container justifyContent="center" ref={revealRefLeft}>
+        <Grid item xs={12} md={8} lg={6}>
+          <Card elevation={3} sx={{
+            borderRadius: 2,
+            transition: 'transform 0.3s',
+            '&:hover': {
+              transform: 'translateY(-5px)',
+              boxShadow: 6
+            },
+            borderLeft: '6px solid #1976d2',
+            backgroundColor: '#ffffff'
+          }}>
+            <CardContent sx={{ textAlign: 'center', p: 4 }}>
+              <Typography variant="h5" component="h3" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                WCU Student President Election
+              </Typography>
+
+              <Typography variant="body1" paragraph sx={{ color: '#555', mb: 3 }}>
+                Vote to elect the Wachemo University Student President. Ensure you are registered and eligible to participate in this campus election.
+              </Typography>
+
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                startIcon={<HowToVoteIcon />}
+                onClick={() => navigate('/Vote')}
+                disabled={voteStatus} // Optional: disable if already voted
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 50,
+                  textTransform: 'none',
+                  fontSize: '1.1rem'
+                }}
+              >
+                {voteStatus ? "You Have Voted" : "Participate / Vote"}
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  )
 }
 export default UpcomingElections;

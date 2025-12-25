@@ -136,7 +136,7 @@ const Calendar = () => {
                                     select={handleDateClick}
                                     eventClick={handleEventClick}
                                     eventsSet={(events) => setCurrentEvents(events)}
-                                    eventContent={renderEventContent} 
+                                    eventContent={renderEventContent}
                                     initialEvents={[
                                         {
                                             id: "5123",

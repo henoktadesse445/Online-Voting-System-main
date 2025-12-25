@@ -1,12 +1,25 @@
 import * as React from 'react';
 import { useState, useRef } from 'react';
-import './userCard.css';
 import { BASE_URL } from '../../../../helper';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import {
+    Card,
+    CardContent,
+    Typography,
+    Avatar,
+    Box,
+    Chip,
+    CircularProgress,
+    IconButton,
+    Tooltip
+} from '@mui/material';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 // Default avatar image for users without a profile photo
-const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjYwIiBmaWxsPSIjOTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjxzdHlsZT4uc3R5bGUxe2ZvbnQtc2l6ZTo4MHB4fTwvc3R5bGU+PHRzcGFuIGNsYXNzPSJzdHlsZTEiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNDQ4IDUxMiIgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjOTk5Ij48cGF0aCBkPSJNMjI0IDI1NmMtNzAuNyAwLTEyOC01Ny4zLTEyOC0xMjhTMTUzLjMgMCAyMjQgMHMxMjggNTcuMyAxMjggMTI4LTU3LjMgMTI4LTEyOCAxMjh6bTg5LjYgMzJoLTE5LjJjLTIwLjIgMTAtNDMuNCAxNi03NjQgMTYtMzEuNSAwLTU2LjItNi05NS40LTE2aC0xOS4yQzU3LjMgMjg4IDAgMzQ1LjMgMCA0MTYuMlY0MzJjMCA0NC4xIDM1LjkgODAgODAgODBoMjg4YzQ0LjEgMCA4MC0zNS45IDgwLTgwdi0xNi4yYzAtNzAuOS01Ni43LTEyOC0xMjcuNC0xMjh6Ii8+PC9zdmc+PC90c3Bhbj48L3RleHQ+PC9zdmc+';
+const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjYwIiBmaWxsPSIjOTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjxzdHlsZT4uc3R5bGUxe2ZvbnQtc2l6ZTo4MHB4fTwvc3R5bGU+PHRzcGFuIGNsYXNzPSJzdHlsZTEiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNDQ4IDUxMiIgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjOTk5Ij48cGF0aCBkPSJNMjI0IDI1NmMtNzAuNyAwLTEyOC01Ny4zLTEyOC0xMjhTMTUzLjMgMCAyMjQgMHMxMjggNTcuMyAxMjggMTI4LTU3LjMgMTI4LTEyOCAxMjh6bTg5LjYgMzJoLTE5LjJjLTIwLjIgMTAtNDMuNCAxNi03NjQgMTYtMzEuNSAwLTU2LjItNi05NS40LTE2aC0xOS4yQzU3LjMgMjg4IDAgMzQ1LjMgMCA0MTYuMlY0MzJjMCA0NC4xIDM1LjkgODAgODAgODBoMjg4YzQ0LjEgMCA4MC0zNS45IDgwLTgwdi0xNi4yYzAtNzAuOS01Ni43LTEyOC0xMjh6Ii8+PC9zdmc+PC90c3Bhbj48L3RleHQ+PC9zdmc+';
 
 export default function UserCard({ voter, onPhotoUpdate }) {
     const [uploading, setUploading] = useState(false);
@@ -81,39 +94,65 @@ export default function UserCard({ voter, onPhotoUpdate }) {
     };
 
     return (
-        <div>
-            <div className='User-Card'>
-                <div className='userImage'>
-                    <div className='profile-photo-wrapper'>
-                        <img 
-                            src={fullPhotoUrl} 
-                            alt={voter.name || 'User Profile'} 
-                            onError={(e) => {
-                                // Fallback to default avatar if image fails to load
-                                e.target.src = DEFAULT_AVATAR;
-                            }}
-                        />
-                        <div className='photo-overlay' onClick={handlePhotoClick}>
-                            <span className='upload-icon'></span>
-                            <span className='upload-text'>
-                                {uploading ? 'Uploading...' : 'Change Photo'}
-                            </span>
-                        </div>
-                        <input 
-                            type="file" 
-                            ref={fileInputRef}
-                            onChange={handlePhotoUpload}
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                        />
-                    </div>
-                </div><br />
-                <div className='userDetails1'>
-                    <p><h6>Name: &nbsp; {voter.name || `${voter.firstName || ''} ${voter.lastName || ''}`}</h6> </p>
-                    <p><h6>Student ID: &nbsp;{voter.voterId || voter.voterid || '-'}</h6>  </p>
-                    <p><h6>Voter Status: &nbsp;{voter.voteStatus && (<span className='Voted'>Voted</span>)}{(!voter.voteStatus) && (<span className='notVoted'>Not Voted</span>)}</h6>  </p>
-                </div>
-            </div>
-        </div>
+        <Card elevation={3} sx={{ borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2, backgroundColor: '#ffffff' }}>
+            <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
+                <Avatar
+                    src={fullPhotoUrl}
+                    alt={voter.name || 'User Profile'}
+                    sx={{ width: 150, height: 150, border: '4px solid #fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    imgProps={{ onError: (e) => { e.target.src = DEFAULT_AVATAR; } }}
+                />
+                <Tooltip title="Change Photo">
+                    <IconButton
+                        onClick={handlePhotoClick}
+                        sx={{
+                            position: 'absolute',
+                            bottom: 5,
+                            right: 5,
+                            backgroundColor: '#1976d2',
+                            color: 'white',
+                            '&:hover': { backgroundColor: '#115293' }
+                        }}
+                        disabled={uploading}
+                    >
+                        {uploading ? <CircularProgress size={24} color="inherit" /> : <PhotoCamera />}
+                    </IconButton>
+                </Tooltip>
+
+            </Box>
+
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                style={{ display: 'none' }}
+            />
+
+            <CardContent sx={{ width: '100%', textAlign: 'center' }}>
+                <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    {voter.name || `${voter.firstName || ''} ${voter.lastName || ''}`}
+                </Typography>
+
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.75rem' }}>
+                        Student ID
+                    </Typography>
+                    <Typography variant="h6" color="text.primary">
+                        {voter.voterId || voter.voterid || '-'}
+                    </Typography>
+                </Box>
+
+                <Box sx={{ mt: 2 }}>
+                    <Chip
+                        icon={voter.voteStatus ? <CheckCircleIcon /> : <CancelIcon />}
+                        label={voter.voteStatus ? "Voted" : "Not Voted"}
+                        color={voter.voteStatus ? "success" : "error"}
+                        variant={voter.voteStatus ? "filled" : "outlined"}
+                        sx={{ fontWeight: 'bold', px: 1 }}
+                    />
+                </Box>
+            </CardContent>
+        </Card>
     );
 }

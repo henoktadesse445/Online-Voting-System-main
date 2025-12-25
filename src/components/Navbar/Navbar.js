@@ -8,20 +8,26 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { FaMoon, FaSun } from 'react-icons/fa';
 
+import { ColorModeContext } from '../NewDashboard/theme';
+import { useContext } from 'react';
+import { useTheme } from '@mui/material';
+
 function Nav_bar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isDark, setIsDark] = useState(() => {
-    const stored = localStorage.getItem('theme');
-    return stored ? stored !== 'light' : true;
-  });
+  const theme = useTheme();
+  const colorMode = useContext(ColorModeContext);
+  const isDark = theme.palette.mode === 'dark';
+
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    document.body.classList.toggle('light-mode', !isDark);
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
-
-  const toggleTheme = () => setIsDark(prev => !prev);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Helper function to check if current path is active
   const isActive = (path) => location.pathname === path;
@@ -30,32 +36,44 @@ function Nav_bar() {
   const handleSectionClick = (e, sectionId) => {
     e.preventDefault();
 
-    // If we're already on the home page
     if (location.pathname === '/') {
       const element = document.getElementById(sectionId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        const offset = 80; // Account for sticky header
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
     } else {
-      // Navigate to home page first, then scroll
       navigate('/');
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          const offset = 80;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
         }
       }, 100);
     }
   };
 
   return (
-    <Navbar expand="lg" className="Nav sticky-top">
+    <Navbar expand="lg" className={`Nav sticky-top ${scrolled ? 'scrolled' : ''}`}>
       <Navbar.Brand className="Heading" href="/">
-        Online Voting System
+        Online Voting
       </Navbar.Brand>
       <Navbar.Toggle aria-controls="basic-navbar-nav" className='Toggle' />
       <Navbar.Collapse id="basic-navbar-nav">
-        <Nav className="me-auto Nav">
+        <Nav className="mx-auto">
           <Nav.Link
             className={`Nav-items ${isActive('/') ? 'active' : ''}`}
             href="/"
@@ -94,50 +112,23 @@ function Nav_bar() {
           >
             Contact
           </Nav.Link>
-
-          <NavDropdown
-            title="Get Started"
-            id="getstarted-dropdown"
-            className="Nav-items"
-          >
-            {/* Voter Registration removed - User registration disabled */}
-            <NavDropdown.Item href="/Login">
-              Voter Login
-            </NavDropdown.Item>
-          </NavDropdown>
         </Nav>
 
-        <Nav>
+        <Nav className="align-items-center gap-2">
           <Button
-            variant={isDark ? 'outline-light' : 'outline-dark'}
-            onClick={toggleTheme}
-            size="sm"
-            className="ThemeToggleButton"
-            style={{
-              marginRight: '8px',
-              backgroundColor: 'transparent',
-              borderColor: 'transparent',
-              color: isDark ? '#fff' : '#222',
-              fontWeight: '600',
-              fontSize: '1rem',
-              padding: '0.4rem 0.6rem'
-            }}
+            variant="link"
+            onClick={colorMode.toggleColorMode}
+            className="ThemeToggleButton text-decoration-none"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {isDark ? <FaMoon /> : <FaSun />}
+            {isDark ? <FaSun size={18} /> : <FaMoon size={18} />}
           </Button>
-          {/* Register button removed - User registration disabled */}
+
           <Button
-            variant={isDark ? 'outline-light' : 'outline-dark'}
             href="/Login"
-            size="sm"
-            style={{
-              marginRight: '8px',
-              backgroundColor: 'transparent',
-              borderColor: 'transparent',
-              color: isDark ? '#fff' : '#222',
-              fontSize: '0.85rem',
-              padding: '0.4rem 0.8rem'
-            }}
+            className="LoginButton px-4 ms-lg-2"
+            variant={isDark ? "outline-light" : "outline-primary"}
+            style={{ borderRadius: '0.5rem', fontWeight: '600' }}
           >
             Login
           </Button>

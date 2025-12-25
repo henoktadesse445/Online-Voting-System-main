@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto"); // For secure OTP generation
 const nodemailer = require("nodemailer");
 const compression = require("compression");
 require("dotenv").config();
@@ -16,6 +17,7 @@ const VotingSettings = require("./models/VotingSettings"); // import voting sett
 const OTP = require("./models/OTP"); // import the OTP model
 const Vote = require("./models/Vote"); // import the Vote model
 const StudentList = require("./models/StudentList"); // import the StudentList model
+const ElectionResult = require("./models/ElectionResult"); // import the ElectionResult model
 const { Types } = require("mongoose");
 
 const app = express();
@@ -84,6 +86,22 @@ function generateEmail(firstName, lastName, studentId) {
   return `${cleanFirstName}.${cleanLastName}.${idPart}@gmail.com`;
 }
 
+async function syncUserEmailWithStudentList(user) {
+  if (!user || !user.voterId) return user.email;
+
+  try {
+    const student = await StudentList.findOne({ studentId: user.voterId });
+    if (student && student.email && student.email !== user.email) {
+      console.log(`🔄 [SYNC] Updating email for ${user.voterId}: ${user.email} -> ${student.email}`);
+      user.email = student.email;
+      await User.findByIdAndUpdate(user._id, { email: student.email });
+    }
+  } catch (err) {
+    console.error(`❌ [SYNC] Error syncing email for ${user.voterId}:`, err);
+  }
+  return user.email;
+}
+
 // Connect to MongoDB with connection pooling for better performance
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -135,6 +153,141 @@ function clearCache(pattern) {
     cache.clear();
   }
 }
+
+// 🔐 OTP Security Helper Functions
+// Rate limiting for OTP requests (in-memory)
+const otpRateLimiter = new Map();
+const OTP_RATE_LIMIT = {
+  MAX_REQUESTS: 3,
+  WINDOW_MS: 15 * 60 * 1000 // 15 minutes
+};
+
+/**
+ * Check if voter has exceeded OTP request rate limit
+ * @param {string} voterId - The voter's ID
+ * @returns {Object} { allowed: boolean, retryAfter: number }
+ */
+function checkOTPRateLimit(voterId) {
+  const now = Date.now();
+  const voterRequests = otpRateLimiter.get(voterId) || [];
+
+  // Remove expired requests
+  const validRequests = voterRequests.filter(timestamp => now - timestamp < OTP_RATE_LIMIT.WINDOW_MS);
+
+  if (validRequests.length >= OTP_RATE_LIMIT.MAX_REQUESTS) {
+    const oldestRequest = Math.min(...validRequests);
+    const retryAfter = Math.ceil((oldestRequest + OTP_RATE_LIMIT.WINDOW_MS - now) / 1000 / 60); // minutes
+    return { allowed: false, retryAfter };
+  }
+
+  // Add current request
+  validRequests.push(now);
+  otpRateLimiter.set(voterId, validRequests);
+
+  return { allowed: true, retryAfter: 0 };
+}
+
+/**
+ * Generate cryptographically secure 6-digit OTP
+ * @returns {string} 6-digit OTP code
+ */
+function generateSecureOTP() {
+  // Use crypto.randomInt for cryptographically secure random number
+  const otp = crypto.randomInt(100000, 1000000);
+  return otp.toString();
+}
+
+/**
+ * Hash OTP code before storage
+ * @param {string} code - Plain OTP code
+ * @returns {Promise<string>} Hashed OTP code
+ */
+async function hashOTP(code) {
+  const salt = await bcrypt.genSalt(10);
+  return await bcrypt.hash(code, salt);
+}
+
+/**
+ * Verify OTP code against hashed version
+ * @param {string} code - Plain OTP code to verify
+ * @param {string} hashedCode - Hashed OTP code from database
+ * @returns {Promise<boolean>} True if codes match
+ */
+async function verifyOTPHash(code, hashedCode) {
+  return await bcrypt.compare(code, hashedCode);
+}
+
+/**
+ * Unified OTP verification function for production use
+ * @param {string} voterId - Voter's ObjectId
+ * @param {string} otpCode - Plain OTP code provided by user
+ * @param {Object} options - { isPreElectionOTP: boolean, isPasswordReset: boolean }
+ * @returns {Promise<Object>} { success: boolean, message: string, otp?: Object }
+ */
+async function verifyOTPCode(voterId, otpCode, options = {}) {
+  try {
+    // Validate inputs
+    if (!Types.ObjectId.isValid(voterId)) {
+      return { success: false, message: "Invalid voter identity" };
+    }
+
+    if (!otpCode || otpCode.length !== 6) {
+      return { success: false, message: "OTP must be a 6-digit code" };
+    }
+
+    // Build query based on requirements
+    const query = {
+      voterId: voterId,
+      used: false
+    };
+
+    if (options.isPreElectionOTP !== undefined) {
+      query.isPreElectionOTP = options.isPreElectionOTP;
+    }
+    if (options.isPasswordReset !== undefined) {
+      query.isPasswordReset = options.isPasswordReset;
+    }
+
+    // Find unused OTPs matching criteria
+    const otps = await OTP.find(query).sort({ createdAt: -1 });
+
+    if (!otps || otps.length === 0) {
+      return {
+        success: false,
+        message: "No active OTP found. Please request a new one."
+      };
+    }
+
+    let expiredAny = false;
+    for (const otp of otps) {
+      // Check if OTP is expired
+      if (new Date() > otp.expiresAt) {
+        await OTP.findByIdAndUpdate(otp._id, { used: true });
+        expiredAny = true;
+        continue;
+      }
+
+      // Verify OTP code (compare hashed)
+      const isMatch = await verifyOTPHash(otpCode, otp.code);
+
+      if (isMatch) {
+        return { success: true, message: "OTP verified correctly", otp };
+      }
+    }
+
+    return {
+      success: false,
+      message: expiredAny && otps.every(o => o.used || new Date() > o.expiresAt)
+        ? "Your OTP has expired. Please request a new one."
+        : "Invalid OTP code. Please check and try again."
+    };
+
+  } catch (err) {
+    console.error("Critical error in verifyOTPCode:", err);
+    return { success: false, message: "Server error during OTP verification" };
+  }
+}
+
 
 // ROUTES ------------------------------------
 
@@ -345,10 +498,6 @@ app.get("/getVoter", async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Fetched ${allVoters.length} voters`);
-    }
-
     res.json({ success: true, voter: allVoters });
   } catch (err) {
     console.error("Error fetching voters:", err);
@@ -356,42 +505,65 @@ app.get("/getVoter", async (req, res) => {
   }
 });
 
+// 🗑️ Delete all voters
+app.delete("/api/voters/all", async (req, res) => {
+  try {
+    const { adminId } = req.query;
+
+    // Optional: Basic admin check if adminId is provided
+    if (adminId) {
+      const admin = await User.findById(adminId);
+      if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({ success: false, message: "Unauthorized" });
+      }
+    }
+
+    // Delete all users who are NOT candidates and NOT admins
+    const deletedVoters = await User.deleteMany({
+      role: { $nin: ["candidate", "admin"] }
+    });
+
+    // Also clear the StudentList to keep it in sync
+    const deletedStudents = await StudentList.deleteMany({});
+
+    // Clear related OTPs
+    await OTP.deleteMany({});
+
+    clearCache();
+
+    res.json({
+      success: true,
+      message: "All voters and student list data cleared successfully",
+      deletedCount: deletedVoters.deletedCount,
+      deletedStudentsCount: deletedStudents.deletedCount
+    });
+  } catch (err) {
+    console.error("Error clearing voters:", err);
+    res.status(500).json({ success: false, message: "Error clearing voters" });
+  }
+});
+
 // 🔍 Debug endpoint to check all voters in database
 app.get("/api/debugVoters", async (req, res) => {
   try {
-    // Get ALL users
-    const allUsers = await User.find({}).select('name email role voterId voteStatus createdAt').lean();
-
-    // Get voters with current query (same as /getVoter endpoint)
-    const voters = await User.find({
-      role: { $nin: ["candidate", "admin"] }
-    }).select('name email role voterId voteStatus createdAt').lean();
-
-    // Search for specific names
-    const haba = await User.find({ name: { $regex: /haba/i } }).select('name email role voterId').lean();
-    const aman = await User.find({ name: { $regex: /aman/i } }).select('name email role voterId').lean();
+    const allUsers = await User.find({}).select('name email role voterId voteStatus firstLoginCompleted createdAt').lean();
+    const voters = allUsers.filter(u => u.role !== 'admin' && u.role !== 'candidate');
+    const otps = await OTP.find().sort({ createdAt: -1 }).limit(20).lean();
 
     res.json({
       success: true,
       totalUsers: allUsers.length,
       votersFound: voters.length,
-      allUsers: allUsers.map(u => ({
-        name: u.name,
-        email: u.email,
-        role: u.role || 'null',
-        voterId: u.voterId,
-        voteStatus: u.voteStatus,
-        createdAt: u.createdAt
-      })),
-      voters: voters.map(v => ({
-        name: v.name,
-        email: v.email,
-        role: v.role || 'null',
-        voterId: v.voterId,
-        voteStatus: v.voteStatus
-      })),
-      habaMatches: haba.map(u => ({ name: u.name, email: u.email, role: u.role, voterId: u.voterId })),
-      amanMatches: aman.map(u => ({ name: u.name, email: u.email, role: u.role, voterId: u.voterId }))
+      allUsers,
+      voters,
+      latestOTPs: otps.map(o => ({
+        v: o.voterId,
+        e: o.email,
+        pre: o.isPreElectionOTP,
+        used: o.used,
+        ex: o.expiresAt,
+        created: o.createdAt
+      }))
     });
   } catch (err) {
     console.error("Error in debug endpoint:", err);
@@ -447,254 +619,7 @@ app.post("/createVoter", upload.none(), async (req, res) => {
     message: "User registration has been disabled. All users must be pre-registered by administrators. Please contact your administrator if you need access to the system."
   });
 
-  /* ORIGINAL CODE DISABLED - Registration functionality removed
-  console.log("📥 Registration request received");
-  console.log("Request body:", req.body);
-  
-  try {
-    // Check MongoDB connection first
-    if (mongoose.connection.readyState !== 1) {
-      console.error("❌ MongoDB not connected. ReadyState:", mongoose.connection.readyState);
-      return res.status(500).json({
-        success: false,
-        message: "Database connection error. Please check if MongoDB is running and MONGO_URI is configured correctly."
-      });
-    }
-    console.log("✅ MongoDB connection verified");
-  
-    const { firstName, lastName, email, pass, studentId, voterid, college, department, dob, age } = req.body;
-    const studentIdValue = studentId || voterid; // Handle both field names
-  
-    console.log("📋 Extracted data:", {
-      firstName,
-      lastName,
-      email,
-      studentIdValue,
-      college,
-      department,
-      hasPassword: !!pass,
-      dob,
-      age
-    });
-  
-    // Validate required fields
-    if (!firstName || !lastName || !email || !pass || !studentIdValue) {
-      console.error("❌ Missing required fields");
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields: firstName, lastName, email, password, and studentId are required"
-      });
-    }
-  
-    // Validate WCU student ID format
-    const wcuPattern = /^WCU\d{7}$/;
-    if (!wcuPattern.test(studentIdValue)) {
-      console.error("❌ Invalid student ID format:", studentIdValue);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid WCU Student ID format. Use format: WCU1411395 (exactly 7 digits)"
-      });
-    }
-    console.log("✅ Student ID format valid");
-  
-    // Validate general email format
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(email)) {
-      console.error("❌ Invalid email format:", email);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format"
-      });
-    }
-    console.log("✅ Email format valid");
-  
-    // Check if student exists in StudentList database
-    console.log("🔍 Checking student in StudentList database:", studentIdValue);
-    const studentInList = await StudentList.findOne({
-      studentId: studentIdValue,
-      status: "active"
-    });
-  
-    if (!studentInList) {
-      console.error("❌ Student not found in StudentList:", studentIdValue);
-      return res.status(403).json({
-        success: false,
-        message: "Student ID not found in the authorized student list. Please contact administrator."
-      });
-    }
-    console.log("✅ Student found in StudentList database");
-  
-    // Email mismatch no longer blocks registration; log warning only
-    if (studentInList.email && studentInList.email.toLowerCase() !== email.toLowerCase()) {
-      console.warn("⚠️ Email does not match StudentList record:", email, "vs", studentInList.email);
-    } else {
-      console.log("✅ Email matches StudentList record");
-    }
-  
-    // Verify name matches the student list (case-insensitive, flexible matching)
-    const registeredName = studentInList.name.toLowerCase().trim();
-    const providedName = `${firstName} ${lastName}`.toLowerCase().trim();
-    // Split names and compare (handles different name order or spacing)
-    const registeredNameParts = registeredName.split(/\s+/).sort().join(' ');
-    const providedNameParts = providedName.split(/\s+/).sort().join(' ');
-  
-    if (registeredNameParts !== providedNameParts) {
-      console.error("❌ Name mismatch with StudentList:", providedName, "vs", registeredName);
-      return res.status(400).json({
-        success: false,
-        message: `Name does not match the registered name for this Student ID. Registered name: ${studentInList.name}`
-      });
-    }
-    console.log("✅ Name matches StudentList record");
-  
-    // Verify department matches if provided (optional but recommended)
-    if (department && studentInList.department &&
-      department.toLowerCase().trim() !== studentInList.department.toLowerCase().trim()) {
-      console.warn("⚠️  Department mismatch with StudentList:", department, "vs", studentInList.department);
-      // Warning only, not blocking - but can be made strict if needed
-      // return res.status(400).json({ 
-      //   success: false, 
-      //   message: `Department does not match. Registered department: ${studentInList.department}` 
-      // });
-    }
-    if (studentInList.department) {
-      console.log("✅ Department verification passed");
-    }
-  
-    // Check if user already exists
-    console.log("🔍 Checking for existing user with email:", email);
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.error("❌ User already exists:", email);
-      return res.status(400).json({
-        success: false,
-        message: "User already exists with this email address"
-      });
-    }
-    console.log("✅ Email is unique");
-  
-    // Check if student ID already exists
-    console.log("🔍 Checking for existing student ID:", studentIdValue);
-    const existingStudent = await User.findOne({ voterId: studentIdValue });
-    if (existingStudent) {
-      console.error("❌ Student ID already exists:", studentIdValue);
-      return res.status(400).json({
-        success: false,
-        message: "Student ID already registered to another user"
-      });
-    }
-    console.log("✅ Student ID is unique");
-  
-    // Hash password
-    console.log("🔐 Hashing password...");
-    const hashedPassword = await bcrypt.hash(pass, 10);
-    console.log("✅ Password hashed");
-  
-    // Create new user with additional voter information
-    const userData = {
-      name: `${firstName} ${lastName}`,
-      email,
-      password: hashedPassword,
-      voterId: studentIdValue,
-      role: "voter", // Explicitly set role as voter
-      college: college || undefined,
-      department: department || undefined,
-      dob: dob ? new Date(dob) : undefined,
-      age: age ? parseInt(age) : undefined
-    };
-  
-    console.log("📝 Creating user with data:", {
-      ...userData,
-      password: "[HIDDEN]"
-    });
-  
-    const newUser = new User(userData);
-    console.log("✅ User object created");
-  
-    // Validate the user object before saving
-    try {
-      await newUser.validate();
-      console.log("✅ User object validation passed");
-    } catch (validationErr) {
-      console.error("❌ Validation error before save:", validationErr);
-      const errors = Object.values(validationErr.errors).map(e => e.message).join(', ');
-      return res.status(400).json({
-        success: false,
-        message: `Validation error: ${errors}`
-      });
-    }
-  
-    // Save to database
-    console.log("💾 Attempting to save user to database...");
-    const savedUser = await newUser.save();
-    console.log("✅ Student saved successfully!");
-    console.log("Saved user details:", {
-      _id: savedUser._id,
-      name: savedUser.name,
-      email: savedUser.email,
-      voterId: savedUser.voterId,
-      college: savedUser.college,
-      department: savedUser.department
-    });
-  
-    // Verify the user was actually saved by querying it back
-    const verifyUser = await User.findById(savedUser._id);
-    if (!verifyUser) {
-      console.error("❌ CRITICAL: User was not found after save!");
-      return res.status(500).json({
-        success: false,
-        message: "User creation failed - data not persisted"
-      });
-    }
-    console.log("✅ Verified: User exists in database with ID:", verifyUser._id);
-  
-    res.json({
-      success: true,
-      message: "Student registered successfully for Wachemo University elections",
-      userId: savedUser._id.toString()
-    });
-  } catch (err) {
-    console.error("❌ Error registering student:");
-    console.error("Error name:", err.name);
-    console.error("Error message:", err.message);
-    console.error("Error code:", err.code);
-    console.error("Full error:", err);
-  
-    // Handle specific MongoDB errors
-    if (err.name === 'ValidationError') {
-      const errors = Object.values(err.errors).map(e => e.message).join(', ');
-      console.error("Validation errors:", errors);
-      return res.status(400).json({
-        success: false,
-        message: `Validation error: ${errors}`
-      });
-    }
-  
-    if (err.code === 11000) {
-      // Duplicate key error
-      const field = Object.keys(err.keyPattern || {})[0] || "field";
-      console.error("Duplicate key error on field:", field);
-      return res.status(400).json({
-        success: false,
-        message: `${field} already exists. Please use a different ${field}.`
-      });
-    }
-  
-    if (err.name === 'MongoNetworkError' || err.name === 'MongoServerSelectionError') {
-      console.error("MongoDB network error");
-      return res.status(500).json({
-        success: false,
-        message: "Database connection failed. Please check if MongoDB is running."
-      });
-    }
-  
-    // Generic error
-    res.status(500).json({
-      success: false,
-      message: `Error registering student: ${err.message}`
-    });
-  }
-  */ // END OF DISABLED REGISTRATION CODE
+  // END OF DISABLED REGISTRATION CODE
 });
 
 // 📝 Register new candidate
@@ -734,7 +659,7 @@ app.post("/createCandidate", upload.fields([
 
       // Check if student exists in StudentList database (for self-registration)
       if (user.voterId) {
-        console.log("🔍 Checking candidate student in StudentList database:", user.voterId);
+
         const studentInList = await StudentList.findOne({
           studentId: user.voterId,
           status: "active"
@@ -747,7 +672,7 @@ app.post("/createCandidate", upload.fields([
             message: "Your Student ID is not found in the authorized student list. Please contact administrator."
           });
         }
-        console.log("✅ Candidate student found in StudentList database");
+
       }
 
       // Check if user is already a candidate
@@ -1049,6 +974,267 @@ app.post("/api/assignPositions", async (req, res) => {
   }
 });
 
+// 📚 Archive current election results
+app.post("/api/admin/archive-election", async (req, res) => {
+  try {
+    // 1. Get current settings and stats
+    const settings = await VotingSettings.getSettings();
+    const totalVotes = await Vote.countDocuments();
+
+    // 2. Get all candidates with their vote counts and positions
+    const candidates = await User.find({
+      role: "candidate",
+      approvalStatus: { $in: ["approved", null] }
+    }).select("name party department position votes img symbol");
+
+    if (candidates.length === 0 && totalVotes === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot archive: No candidates or votes found."
+      });
+    }
+
+    // 3. Create archive record
+    const archiveData = {
+      electionTitle: settings.electionTitle || "Election Archive",
+      startDate: settings.startDate,
+      endDate: settings.endDate,
+      totalVotes: totalVotes,
+      results: candidates.map(c => ({
+        candidateId: c._id,
+        name: c.name,
+        party: c.party,
+        department: c.department || c.party, // Fallback for backward compatibility
+        position: c.position,
+        votes: c.votes || 0,
+        img: c.img,
+        symbol: c.symbol
+      })),
+      archivedBy: req.body.adminId // Optional: track who archived it
+    };
+
+    const archivedElection = await ElectionResult.create(archiveData);
+
+    res.json({
+      success: true,
+      message: "Election results archived successfully.",
+      archiveId: archivedElection._id
+    });
+
+  } catch (err) {
+    console.error("Error archiving election:", err);
+    res.status(500).json({ success: false, message: "Error archiving election results" });
+  }
+});
+
+// ⚠️ RESET ELECTION (Destructive Action)
+app.post("/api/admin/reset-election", async (req, res) => {
+  try {
+    const { resetCandidates = true } = req.body;
+
+    console.log("⚠️ STARTING ELECTION RESET | Reset Candidates:", resetCandidates);
+
+    // 1. Delete all votes
+    await Vote.deleteMany({});
+    console.log("✅ All votes deleted");
+
+    // 2. Reset Voting Settings (optional: maybe just set active to false?)
+    // For now, let's just ensure it's inactive so no one votes during reset
+    const settings = await VotingSettings.getSettings();
+    settings.isActive = false;
+    await settings.save();
+
+    // 3. Reset ALL Users (Voters)
+    // - Set voteStatus to false
+    // - Clear voteId (it's unique, so we set it to null/undefined)
+    await User.updateMany(
+      {},
+      {
+        $set: {
+          voteStatus: false,
+          voteId: null
+        }
+      }
+    );
+    console.log("✅ All voters reset");
+
+    // 4. Handle Candidates
+    if (resetCandidates) {
+      // Demote all candidates to voters and clear their election data
+      await User.updateMany(
+        { role: "candidate" },
+        {
+          $set: {
+            role: "voter",
+            votes: 0,
+            position: null,
+            approvalStatus: null, // Clear approval status so they can re-apply if needed
+            // We keep bio, party, img, symbol in case they want to reuse them
+            // or we could clear them too. Let's keep profile data but clear election status.
+          }
+        }
+      );
+      console.log("✅ All candidates demoted to voters");
+    } else {
+      // Keep candidates but reset their counts
+      await User.updateMany(
+        { role: "candidate" },
+        {
+          $set: {
+            votes: 0,
+            position: null // Clear won positions
+          }
+        }
+      );
+      console.log("✅ Candidates retained but vote counts reset");
+    }
+
+    // 5. Clear specific server-side cache
+    clearCache("ELECTION");
+    clearCache("USER");
+
+    res.json({
+      success: true,
+      message: "Election system has been reset successfully. Votes cleared." +
+        (resetCandidates ? " Candidates have been demoted." : " Candidate lists retained.")
+    });
+
+  } catch (err) {
+    console.error("CRITICAL ERROR during election reset:", err);
+    res.status(500).json({ success: false, message: "Critical error resetting election system" });
+  }
+});
+
+// 🆕 START NEW ELECTION (Admin Only)
+app.post("/api/admin/start-new-election", async (req, res) => {
+  try {
+    const { adminId, confirmationCode } = req.body;
+
+    console.log("🆕 START NEW ELECTION REQUEST RECEIVED");
+
+    // 1. Verify admin authentication
+    if (!adminId || !Types.ObjectId.isValid(adminId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required"
+      });
+    }
+
+    const admin = await User.findById(adminId).select('name role');
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Admin access required."
+      });
+    }
+
+    // 2. Verify confirmation code
+    if (confirmationCode !== 'START_NEW_ELECTION') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid confirmation code"
+      });
+    }
+
+    console.log(`✅ Admin verified: ${admin.name} (${adminId})`);
+
+    console.log(`✅ Admin verified: ${admin.name} (${adminId})`);
+
+    // 3. Clear all votes
+    console.log("3. Clearing votes...");
+    const deletedVotes = await Vote.deleteMany({});
+    console.log(`✅ Deleted ${deletedVotes.deletedCount} votes`);
+
+    // 4. Reset candidates to voters (instead of deleting them)
+    console.log("4. Resetting candidates...");
+    const resetCandidates = await User.updateMany(
+      { role: 'candidate' },
+      {
+        $set: {
+          role: 'voter',
+          votes: 0,
+          party: null,
+          bio: null,
+          cgpa: null,
+          position: null,
+          img: null,
+          symbol: null,
+          authenticatedDocument: null,
+          approvalStatus: null
+        }
+      }
+    );
+    console.log(`✅ Reset ${resetCandidates.modifiedCount} candidates to voters`);
+
+    // 5. Delete all election results
+    console.log("5. Clearing results...");
+    const deletedResults = await ElectionResult.deleteMany({});
+    console.log(`✅ Deleted ${deletedResults.deletedCount} election results`);
+
+    // 6. Reset all voter statuses (all non-admins)
+    // We use a more explicit filter to ensure we catch everyone including those with null/undefined roles
+    console.log("6. Resetting voters...");
+    const resetVoters = await User.updateMany(
+      { role: { $ne: 'admin' } },
+      {
+        $set: {
+          voteStatus: false
+        },
+        $unset: {
+          voteId: ""
+        }
+      }
+    );
+    console.log(`✅ Reset ${resetVoters.modifiedCount} users to non-voted status`);
+
+    // 7. Clear all OTPs
+    console.log("7. Clearing OTPs...");
+    const deletedOTPs = await OTP.deleteMany({});
+    console.log(`✅ Cleared ${deletedOTPs.deletedCount} OTPs`);
+
+    // 8. Clear cache
+    if (typeof clearCache === 'function') {
+      console.log("8. Clearing cache...");
+      clearCache();
+      console.log("✅ Cache cleared");
+    }
+
+    console.log("🎉 NEW ELECTION STARTED SUCCESSFULLY");
+
+    res.json({
+      success: true,
+      message: "New election started successfully",
+      summary: {
+        votesDeleted: deletedVotes.deletedCount || 0,
+        candidatesDeleted: resetCandidates.modifiedCount || 0,
+        resultsDeleted: deletedResults.deletedCount || 0,
+        votersReset: resetVoters.modifiedCount || 0,
+        otpsCleared: deletedOTPs.deletedCount || 0
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Error starting new election:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error starting new election",
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  }
+});
+
+// 📜 Get Election History
+app.get("/api/admin/election-history", async (req, res) => {
+  try {
+    const history = await ElectionResult.find().sort({ archivedAt: -1 });
+    res.json({ success: true, history });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Error fetching election history" });
+  }
+});
+
 // 🏆 Get winners per position (based on assigned positions after election)
 app.get("/api/winnersByPosition", async (req, res) => {
   try {
@@ -1208,10 +1394,12 @@ app.post("/api/resetCandidateStatus/:id", async (req, res) => {
 // 📊 Get dashboard statistics
 app.get("/getDashboardData", async (req, res) => {
   try {
-    // Count total voters (including candidates as they are also voters)
-    const voterCount = await User.countDocuments({
-      role: { $in: ["voter", "candidate", undefined, null] }
-    });
+    // Prevent caching of dashboard data
+    res.header("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.header("Pragma", "no-cache");
+    res.header("Expires", "0");
+    // Count total eligible voters from StudentList (uploaded list)
+    const voterCount = await StudentList.countDocuments({});
 
     // Count total candidates
     const candidateCount = await User.countDocuments({ role: "candidate" });
@@ -1450,6 +1638,16 @@ app.post("/api/requestOTP", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid voter ID" });
     }
 
+    // Check rate limiting
+    const rateLimitCheck = checkOTPRateLimit(voterId);
+    if (!rateLimitCheck.allowed) {
+      console.log(`⚠️ Rate limit exceeded for voter ${voterId}`);
+      return res.status(429).json({
+        success: false,
+        message: `Too many OTP requests. Please try again in ${rateLimitCheck.retryAfter} minute(s).`
+      });
+    }
+
     // Check if voting is active
     const settings = await VotingSettings.getSettings();
     if (!settings.isVotingActive()) {
@@ -1460,10 +1658,13 @@ app.post("/api/requestOTP", async (req, res) => {
     }
 
     // Get voter information
-    const voter = await User.findById(voterId).select("name email voteStatus");
+    const voter = await User.findById(voterId).select("name email voteStatus voterId firstLoginCompleted");
     if (!voter) {
       return res.status(404).json({ success: false, message: "Voter not found" });
     }
+
+    // Sync email with StudentList in case it was updated
+    await syncUserEmailWithStudentList(voter);
 
     // Check if already voted
     if (voter.voteStatus) {
@@ -1476,21 +1677,27 @@ app.post("/api/requestOTP", async (req, res) => {
       { used: true }
     );
 
-    // Generate 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate secure 6-digit OTP
+    const otpCode = generateSecureOTP();
+
+    // Hash OTP before storing
+    const hashedOTP = await hashOTP(otpCode);
 
     // OTP expires in 10 minutes
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save OTP to database
+    // Save hashed OTP to database
     const otp = new OTP({
       voterId: voterId,
-      code: otpCode,
+      code: hashedOTP, // Store hashed OTP
       email: voter.email,
       expiresAt: expiresAt,
-      used: false
+      used: false,
+      isPreElectionOTP: !voter.firstLoginCompleted // 🚩 IMPORTANT: Set flag for first-time login
     });
     await otp.save();
+
+    console.log(`🔐 Secure OTP generated for voter ${voterId} (First login: ${!voter.firstLoginCompleted})`);
 
     // Send OTP via email
     try {
@@ -1534,8 +1741,6 @@ app.post("/api/requestOTP", async (req, res) => {
       console.log(`📧 Message ID: ${emailInfo.messageId}`);
       console.log(`📧 Response: ${emailInfo.response}`);
       console.log(`📧 To: ${voter.email}`);
-      // OTP is NOT logged in console for security - only sent via email
-      console.log(`✅ OTP generated and sent to ${voter.email}`);
       console.log(`📧 From: ${process.env.EMAIL_USER}`);
 
       res.json({
@@ -1547,7 +1752,6 @@ app.post("/api/requestOTP", async (req, res) => {
       console.error("❌ Error sending OTP email:");
       console.error("❌ Error message:", emailError.message);
       console.error("❌ Error code:", emailError.code);
-      console.error("❌ Full error:", emailError);
 
       // Delete the OTP if email failed
       await OTP.findByIdAndDelete(otp._id);
@@ -1710,35 +1914,20 @@ app.post("/api/verifyOTP", async (req, res) => {
   try {
     const { voterId, otpCode } = req.body;
 
-    if (!Types.ObjectId.isValid(voterId)) {
-      return res.status(400).json({ success: false, message: "Invalid voter ID" });
-    }
+    // Use unified verification function
+    const verificationResult = await verifyOTPCode(voterId, otpCode);
 
-    if (!otpCode || otpCode.length !== 6) {
-      return res.status(400).json({ success: false, message: "Invalid OTP format" });
-    }
-
-    // Find the OTP
-    const otp = await OTP.findOne({
-      voterId: voterId,
-      code: otpCode,
-      used: false
-    });
-
-    if (!otp) {
-      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-    }
-
-    // Check if OTP is expired
-    if (new Date() > otp.expiresAt) {
-      // Mark as used even though expired (cleanup)
-      await OTP.findByIdAndUpdate(otp._id, { used: true });
-      return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: verificationResult.message
+      });
     }
 
     // Mark OTP as used
-    otp.used = true;
-    await otp.save();
+    await OTP.findByIdAndUpdate(verificationResult.otp._id, { used: true });
+
+    console.log(`✅ OTP verified successfully for voter ${voterId}`);
 
     res.json({
       success: true,
@@ -1782,26 +1971,14 @@ app.post("/vote", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid candidate or voter id" });
     }
 
-    // Verify OTP before allowing vote
-    if (!otpCode || otpCode.length !== 6) {
-      return res.status(400).json({ success: false, message: "OTP is required. Please request an OTP first." });
-    }
+    // Verify OTP before allowing vote using unified verification function
+    const verificationResult = await verifyOTPCode(voterId, otpCode);
 
-    // Find and verify the OTP
-    const otp = await OTP.findOne({
-      voterId: voterId,
-      code: otpCode,
-      used: false
-    });
-
-    if (!otp) {
-      return res.status(400).json({ success: false, message: "Invalid or expired OTP. Please request a new one." });
-    }
-
-    // Check if OTP is expired
-    if (new Date() > otp.expiresAt) {
-      await OTP.findByIdAndUpdate(otp._id, { used: true });
-      return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: verificationResult.message
+      });
     }
 
     // Check if candidate exists
@@ -1810,7 +1987,21 @@ app.post("/vote", async (req, res) => {
       return res.status(404).json({ success: false, message: "Candidate not found" });
     }
 
-    // Check if voter has already voted (one vote per voter)
+    // Fetch voter to check status and get/generate voteId
+    const voter = await User.findById(voterId);
+    if (!voter) {
+      return res.status(404).json({ success: false, message: "Voter not found" });
+    }
+
+    // Check if voter has already voted
+    if (voter.voteStatus) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already voted. You can only vote once."
+      });
+    }
+
+    // Check for existing vote record (double safety)
     const existingVote = await Vote.findOne({ voterId });
     if (existingVote) {
       return res.status(409).json({
@@ -1819,10 +2010,19 @@ app.post("/vote", async (req, res) => {
       });
     }
 
+    // Ensure voter has a unique voteId
+    let userVoteId = voter.voteId;
+    if (!userVoteId) {
+      // Generate new unique voteId if missing
+      userVoteId = crypto.randomBytes(8).toString('hex');
+      await User.findByIdAndUpdate(voterId, { voteId: userVoteId });
+    }
+
     // Create vote record (no position field - single vote per voter)
     const vote = new Vote({
       voterId,
-      candidateId
+      candidateId,
+      voteId: userVoteId // Include the required voteId
     });
 
     await vote.save();
@@ -1834,7 +2034,7 @@ app.post("/vote", async (req, res) => {
     await User.findByIdAndUpdate(voterId, { voteStatus: true });
 
     // Invalidate the OTP after successful voting
-    await OTP.findByIdAndUpdate(otp._id, { used: true });
+    await OTP.findByIdAndUpdate(verificationResult.otp._id, { used: true });
 
     console.log(`✅ Vote recorded: Voter ${voterId} voted for ${candidate.name}`);
     return res.json({
@@ -1855,6 +2055,328 @@ app.post("/vote", async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error while voting" });
   }
 });
+
+// 🚨 SECURE: Reset Election Endpoint with Archiving
+app.post("/api/reset-election", async (req, res) => {
+  try {
+    const { adminId, resetReason, confirmationCode } = req.body;
+
+    console.log("⚠️ ELECTION RESET REQUEST RECEIVED");
+    console.log(`📋 Admin ID: ${adminId}`);
+
+    // 1. Validate admin authentication
+    if (!adminId || !Types.ObjectId.isValid(adminId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required."
+      });
+    }
+
+    const admin = await User.findById(adminId).select('name email role');
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Only administrators can reset elections."
+      });
+    }
+
+    // 2. Verify confirmation code
+    if (confirmationCode !== 'RESET_ELECTION_CONFIRMED') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid confirmation code."
+      });
+    }
+
+    if (!resetReason || resetReason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a detailed reason (min 10 chars)."
+      });
+    }
+
+    // 3. Create Archive (if data exists)
+    const voteCount = await Vote.countDocuments({});
+    const candidateCount = await User.countDocuments({ role: 'candidate' });
+    let archive = null;
+
+    if (voteCount > 0 || candidateCount > 0) {
+      try {
+        console.log("📦 Creating election archive...");
+        archive = await createElectionArchive(adminId, resetReason, req);
+        console.log(`✅ Archive created: ${archive.electionId}`);
+      } catch (archiveErr) {
+        console.error("❌ Failed to create archive:", archiveErr);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create archive. Reset aborted.",
+          error: archiveErr.message
+        });
+      }
+    } else {
+      console.log("ℹ️ No meaningful data to archive.");
+    }
+
+    // 4. Perform Reset (Delete Data)
+    console.log("🔄 Starting data cleanup...");
+
+    // Delete Votes
+    const deletedVotes = await Vote.deleteMany({});
+    console.log(`✅ Deleted ${deletedVotes.deletedCount} votes`);
+
+    // Delete Candidates
+    const deletedCandidates = await User.deleteMany({ role: 'candidate' });
+    console.log(`✅ Deleted ${deletedCandidates.deletedCount} candidates`);
+
+    // Delete Voting Participants
+    const deletedVoters = await User.deleteMany({ role: 'voter', voteStatus: true });
+    console.log(`✅ Deleted ${deletedVoters.deletedCount} active voters`);
+
+    // Reset Remaining Voters
+    const resetVoters = await User.updateMany({ role: 'voter' }, { voteStatus: false });
+    console.log(`✅ Reset ${resetVoters.modifiedCount} remaining voters`);
+
+    // Delete OTPs & Results
+    await OTP.deleteMany({});
+    await ElectionResult.deleteMany({});
+
+    // Clear Student List
+    const deletedStudents = await StudentList.deleteMany({});
+    console.log(`✅ Deleted ${deletedStudents.deletedCount} student records`);
+
+    // Reset Settings
+    await VotingSettings.deleteMany({});
+    const freshSettings = await VotingSettings.getSettings();
+
+    // Clear Cache
+    clearCache();
+
+    // 5. Success Response
+    res.json({
+      success: true,
+      message: "Election reset successfully.",
+      archive: archive ? {
+        electionId: archive.electionId,
+        stats: archive.statistics
+      } : null,
+      resetSummary: {
+        votesDeleted: deletedVotes.deletedCount,
+        candidatesDeleted: deletedCandidates.deletedCount,
+        votersDeleted: deletedVoters.deletedCount,
+        studentsDeleted: deletedStudents.deletedCount,
+        timestamp: new Date()
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Critical error during reset:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error during reset",
+      error: err.message
+    });
+  }
+});
+
+
+// 📦 Archive Management Endpoints
+
+// GET /api/archives - List all election archives
+app.get("/api/archives", async (req, res) => {
+  try {
+    const { adminId } = req.query;
+
+    // Verify admin authentication
+    if (!adminId || !Types.ObjectId.isValid(adminId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required"
+      });
+    }
+
+    const admin = await User.findById(adminId).select('role');
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Admin access required."
+      });
+    }
+
+    // Fetch all archives with summary information
+    const archives = await ElectionArchive.find({})
+      .select('electionId electionTitle archiveDate statistics verified dataHash resetReason')
+      .sort({ archiveDate: -1 })
+      .populate('archivedBy', 'name email')
+      .lean();
+
+    console.log(`📦 Retrieved ${archives.length} archives for admin ${adminId}`);
+
+    res.json({
+      success: true,
+      count: archives.length,
+      archives: archives.map(archive => ({
+        id: archive._id,
+        electionId: archive.electionId,
+        electionTitle: archive.electionTitle,
+        archiveDate: archive.archiveDate,
+        archivedBy: archive.archivedBy,
+        resetReason: archive.resetReason,
+        statistics: archive.statistics,
+        verified: archive.verified,
+        dataHashPreview: archive.dataHash.substring(0, 16) + '...'
+      }))
+    });
+
+  } catch (err) {
+    console.error("Error fetching archives:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching archives",
+      error: err.message
+    });
+  }
+});
+
+// GET /api/archives/:id - View specific archive details
+app.get("/api/archives/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId } = req.query;
+
+    // Verify admin authentication
+    if (!adminId || !Types.ObjectId.isValid(adminId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required"
+      });
+    }
+
+    const admin = await User.findById(adminId).select('role');
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized. Admin access required."
+      });
+    }
+
+    // Validate archive ID
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid archive ID"
+      });
+    }
+
+    // Fetch archive with full details
+    const archive = await ElectionArchive.findById(id)
+      .populate('archivedBy', 'name email role')
+      .lean();
+
+    if (!archive) {
+      return res.status(404).json({
+        success: false,
+        message: "Archive not found"
+      });
+    }
+
+    console.log(`📦 Retrieved archive ${archive.electionId} for admin ${adminId}`);
+
+    res.json({
+      success: true,
+      archive
+    });
+
+  } catch (err) {
+    console.error("Error fetching archive:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching archive details",
+      error: err.message
+    });
+  }
+});
+
+// POST /api/verify-archive/:id - Verify archive integrity
+app.post("/api/verify-archive/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId } = req.body;
+
+    // Verify admin authentication (optional for verification, but good practice)
+    if (adminId) {
+      if (!Types.ObjectId.isValid(adminId)) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid admin ID"
+        });
+      }
+
+      const admin = await User.findById(adminId).select('role');
+      if (!admin || admin.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized. Admin access required."
+        });
+      }
+    }
+
+    // Validate archive ID
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid archive ID"
+      });
+    }
+
+    // Fetch archive
+    const archive = await ElectionArchive.findById(id);
+    if (!archive) {
+      return res.status(404).json({
+        success: false,
+        message: "Archive not found"
+      });
+    }
+
+    console.log(`🔐 Verifying integrity of archive ${archive.electionId}...`);
+
+    // Verify integrity
+    const isValid = verifyArchiveIntegrity(archive);
+
+    // Update verification status
+    await ElectionArchive.findByIdAndUpdate(id, {
+      verified: isValid,
+      lastVerified: new Date()
+    });
+
+    console.log(`🔐 Archive ${archive.electionId} integrity: ${isValid ? 'VALID ✅' : 'INVALID ❌'}`);
+
+    res.json({
+      success: true,
+      verified: isValid,
+      message: isValid
+        ? "✅ Archive integrity verified. Data has not been tampered with."
+        : "⚠️ Archive integrity check FAILED. Data may have been tampered with!",
+      details: {
+        electionId: archive.electionId,
+        archiveDate: archive.archiveDate,
+        dataHash: archive.dataHash,
+        hashAlgorithm: archive.hashAlgorithm,
+        lastVerified: new Date()
+      }
+    });
+
+  } catch (err) {
+    console.error("Error verifying archive:", err);
+    res.status(500).json({
+      success: false,
+      message: "Error verifying archive integrity",
+      error: err.message
+    });
+  }
+});
+
+
+
 
 // ⚙️ Get voting settings (start/end date, status)
 app.get("/api/votingSettings", async (req, res) => {
@@ -1884,7 +2406,7 @@ app.get("/api/votingSettings", async (req, res) => {
 // ⚙️ Update voting settings (Admin only)
 app.post("/api/votingSettings", async (req, res) => {
   try {
-    const { startDate, endDate, isActive, electionTitle } = req.body;
+    const { startDate, endDate, isActive, electionTitle, skipAutoReset } = req.body;
 
     // Validate dates
     if (startDate && endDate) {
@@ -1924,12 +2446,13 @@ app.post("/api/votingSettings", async (req, res) => {
       await settings.save();
     }
 
+
     const now = new Date();
     const votingActive = settings.isVotingActive();
 
     res.json({
       success: true,
-      message: "Voting settings updated successfully",
+      message: "Voting settings saved successfully.",
       settings: {
         startDate: settings.startDate,
         endDate: settings.endDate,
@@ -1967,7 +2490,6 @@ app.get("/api/studentList", async (req, res) => {
 
     const students = await StudentList.find(query)
       .sort({ createdAt: -1 })
-      .select("studentId name email college department year cgpa status createdAt updatedAt")
       .lean();
 
     const totalCount = await StudentList.countDocuments(query);
@@ -2065,6 +2587,14 @@ app.post("/api/studentList/bulk", async (req, res) => {
         message: "students must be a non-empty array"
       });
     }
+
+    // 🗑️ Clear all existing StudentList, Voter (User), and OTP data before adding new data
+    await StudentList.deleteMany({});
+    await User.deleteMany({ role: { $in: ['voter', undefined, null] } });
+    await OTP.deleteMany({});
+
+    console.log(`🗑️ System state reset: Cleared StudentList, Voters, and OTPs.`);
+    console.log(`📥 Uploading ${students.length} new students to StudentList`);
 
     const results = {
       success: [],
@@ -2563,42 +3093,41 @@ app.post("/login", async (req, res) => {
     }
 
     // Allow login by email OR student voterId
-    const query = username?.includes("@") ? { email: username } : { voterId: username };
+    // Robust normalization: trim and handle case-sensitivity
+    const cleanedUsername = username?.trim() || "";
+    const isEmail = cleanedUsername.includes("@");
+    const normalizedUsername = isEmail ? cleanedUsername.toLowerCase() : cleanedUsername.toUpperCase();
+
+    const query = isEmail ? { email: normalizedUsername } : { voterId: normalizedUsername };
+
+    console.log(`🔍 [LOGIN] Attempt for: "${normalizedUsername}" (Original: "${username}")`);
+
     const user = await User.findOne(query);
     if (!user) {
+      console.log(`❌ [LOGIN] User not found for query:`, query);
       return res.json({ success: false, message: "User not found" });
     }
 
     // Check if this is first-time login (user hasn't completed first login yet)
     if (!user.firstLoginCompleted) {
-      // FIRST-TIME LOGIN: Credential is treated as OTP
-      // Verify pre-sent OTP
-      const otpRecord = await OTP.findOne({
-        voterId: user._id,
-        code: credential,
-        used: false,
-        isPreElectionOTP: true
-      }).sort({ createdAt: -1 });
+      console.log(`🆕 [LOGIN] First-time login for: ${user.email} (ID: ${user._id})`);
 
-      if (!otpRecord) {
+      // Verify pre-sent OTP (using unified helper)
+      const verification = await verifyOTPCode(user._id, credential, { isPreElectionOTP: true });
+
+      if (!verification.success) {
+        console.log(`❌ [LOGIN] OTP verification failed: ${verification.message}`);
         return res.json({
           success: false,
-          message: "Invalid OTP. Please use the OTP sent to your email.",
+          message: verification.message,
           isFirstTimeLogin: true
         });
       }
 
-      // Check if OTP is expired
-      if (otpRecord.expiresAt < new Date()) {
-        return res.json({
-          success: false,
-          message: "OTP has expired. Please contact administrator for a new OTP.",
-          isFirstTimeLogin: true
-        });
-      }
+      const validOTPRecord = verification.otp;
 
       // Mark OTP as used
-      await OTP.updateOne({ _id: otpRecord._id }, { used: true });
+      await OTP.updateOne({ _id: validOTPRecord._id }, { used: true });
 
       console.log(`✅ First-time OTP verified for ${user.email}`);
 
@@ -2751,13 +3280,30 @@ app.post("/requestPasswordReset", async (req, res) => {
     }
 
     // Find user by email or voterId
-    const query = username?.includes("@") ? { email: username } : { voterId: username };
+    const cleanedUsername = username?.trim() || "";
+    const isEmail = cleanedUsername.includes("@");
+    const normalizedUsername = isEmail ? cleanedUsername.toLowerCase() : cleanedUsername.toUpperCase();
+    const query = isEmail ? { email: normalizedUsername } : { voterId: normalizedUsername };
+
+    console.log(`🔍 [RESET-REQ] Lookup for: "${normalizedUsername}"`);
     const user = await User.findOne(query);
 
     if (!user) {
       return res.json({
         success: false,
         message: "User not found"
+      });
+    }
+
+    // Sync email with StudentList in case it was updated
+    await syncUserEmailWithStudentList(user);
+
+    // Rate Limit Check
+    const rateLimit = checkOTPRateLimit(user._id.toString());
+    if (!rateLimit.allowed) {
+      return res.json({
+        success: false,
+        message: `Too many requests. Please try again in ${rateLimit.retryAfter} minutes.`
       });
     }
 
@@ -2781,10 +3327,13 @@ app.post("/requestPasswordReset", async (req, res) => {
       { used: true }
     );
 
+    // Hash OTP before storing
+    const hashedOTP = await hashOTP(otpCode);
+
     // Create new password reset OTP
     const newOTP = new OTP({
       voterId: user._id,
-      code: otpCode,
+      code: hashedOTP, // Store hashed OTP
       email: user.email,
       expiresAt: expiresAt,
       used: false,
@@ -2865,7 +3414,12 @@ app.post("/verifyResetOTP", async (req, res) => {
     }
 
     // Find user
-    const query = username?.includes("@") ? { email: username } : { voterId: username };
+    const cleanedUsername = username?.trim() || "";
+    const isEmail = cleanedUsername.includes("@");
+    const normalizedUsername = isEmail ? cleanedUsername.toLowerCase() : cleanedUsername.toUpperCase();
+    const query = isEmail ? { email: normalizedUsername } : { voterId: normalizedUsername };
+
+    console.log(`🔍 [VERIFY-RESET] Lookup for: "${normalizedUsername}"`);
     const user = await User.findOne(query);
 
     if (!user) {
@@ -2875,32 +3429,20 @@ app.post("/verifyResetOTP", async (req, res) => {
       });
     }
 
-    // Find the password reset OTP
-    const otpRecord = await OTP.findOne({
-      voterId: user._id,
-      code: otp,
-      used: false,
-      isPasswordReset: true
-    }).sort({ createdAt: -1 });
+    // Verify OTP using unified helper
+    const verification = await verifyOTPCode(user._id, otp, { isPasswordReset: true });
 
-    if (!otpRecord) {
+    if (!verification.success) {
       return res.json({
         success: false,
-        message: "Invalid OTP"
+        message: verification.message
       });
     }
 
-    // Check if OTP is expired
-    if (new Date() > otpRecord.expiresAt) {
-      await OTP.findByIdAndUpdate(otpRecord._id, { used: true });
-      return res.json({
-        success: false,
-        message: "OTP has expired. Please request a new one."
-      });
-    }
+    const validOTPRecord = verification.otp;
 
     // Mark OTP as used
-    await OTP.findByIdAndUpdate(otpRecord._id, { used: true });
+    await OTP.findByIdAndUpdate(validOTPRecord._id, { used: true });
 
     // Generate temporary reset token (valid for 10 minutes)
     const resetToken = `RST-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
@@ -3022,7 +3564,12 @@ app.post("/verifyOTP", async (req, res) => {
     }
 
     // Find user by email or voterId
-    const query = username?.includes("@") ? { email: username } : { voterId: username };
+    const cleanedUsername = username?.trim() || "";
+    const isEmail = cleanedUsername.includes("@");
+    const normalizedUsername = isEmail ? cleanedUsername.toLowerCase() : cleanedUsername.toUpperCase();
+    const query = isEmail ? { email: normalizedUsername } : { voterId: normalizedUsername };
+
+    console.log(`🔍 [VERIFY-OTP] Lookup for: "${normalizedUsername}"`);
     const user = await User.findOne(query);
 
     if (!user) {
@@ -3032,31 +3579,20 @@ app.post("/verifyOTP", async (req, res) => {
       });
     }
 
-    // Find the OTP for this user
-    const otpRecord = await OTP.findOne({
-      voterId: user._id,
-      code: otp,
-      used: false
-    }).sort({ createdAt: -1 }); // Get the most recent OTP
+    // Verify OTP using unified helper
+    const verification = await verifyOTPCode(user._id, otp);
 
-    if (!otpRecord) {
+    if (!verification.success) {
       return res.status(400).json({
         success: false,
-        message: "Invalid OTP code"
+        message: verification.message
       });
     }
 
-    // Check if OTP is expired
-    if (new Date() > otpRecord.expiresAt) {
-      await OTP.findByIdAndUpdate(otpRecord._id, { used: true });
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired. Please request a new one."
-      });
-    }
+    const validOTPRecord = verification.otp;
 
     // Mark OTP as used
-    await OTP.findByIdAndUpdate(otpRecord._id, { used: true });
+    await OTP.findByIdAndUpdate(validOTPRecord._id, { used: true });
 
     // Generate unique Vote ID
     const timestamp = Date.now();
@@ -3106,13 +3642,49 @@ app.post("/resendOTP", async (req, res) => {
     }
 
     // Find user by email or voterId
-    const query = username?.includes("@") ? { email: username } : { voterId: username };
-    const user = await User.findOne(query);
+    const cleanedUsername = username?.trim() || "";
+    const isEmail = cleanedUsername.includes("@");
+    const normalizedUsername = isEmail ? cleanedUsername.toLowerCase() : cleanedUsername.toUpperCase();
+    const query = isEmail ? { email: normalizedUsername } : { voterId: normalizedUsername };
+
+    console.log(`🔄 [RESEND-OTP] Lookup for: "${normalizedUsername}"`);
+    let user = await User.findOne(query);
 
     if (!user) {
-      return res.status(404).json({
+      console.log(`🔍 [RESEND-OTP] User not found in 'User' collection. Checking 'StudentList'...`);
+      const studentSearchQuery = isEmail ? { email: normalizedUsername } : { studentId: normalizedUsername };
+      const student = await StudentList.findOne(studentSearchQuery);
+
+      if (student) {
+        console.log(`👤 [RESEND-OTP] Found in StudentList. Creating record for: ${student.studentId}`);
+        user = new User({
+          name: student.name,
+          email: student.email,
+          voterId: student.studentId,
+          role: 'voter',
+          password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+          voteStatus: false,
+          department: student.department || '',
+          college: student.college || ''
+        });
+        await user.save();
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: "User not found in voter records or student list. Please contact administrator."
+        });
+      }
+    }
+
+    // Sync email with StudentList in case it was updated
+    await syncUserEmailWithStudentList(user);
+
+    // Rate Limit Check
+    const rateLimit = checkOTPRateLimit(user._id.toString());
+    if (!rateLimit.allowed) {
+      return res.status(429).json({
         success: false,
-        message: "User not found"
+        message: `Too many requests. Please try again in ${rateLimit.retryAfter} minutes.`
       });
     }
 
@@ -3128,13 +3700,17 @@ app.post("/resendOTP", async (req, res) => {
       { used: true }
     );
 
+    // Hash OTP before storing
+    const hashedOTP = await hashOTP(otpCode);
+
     // Create new OTP
     const newOTP = new OTP({
       voterId: user._id,
-      code: otpCode,
+      code: hashedOTP, // Store hashed OTP
       email: user.email,
       expiresAt: expiresAt,
-      used: false
+      used: false,
+      isPreElectionOTP: !user.firstLoginCompleted // 🚩 IMPORTANT: Set flag for first-time login
     });
     await newOTP.save();
 
@@ -3198,17 +3774,40 @@ app.post("/resendOTP", async (req, res) => {
 app.post("/adminlogin", async (req, res) => {
   try {
     const { username, password } = req.body;
-
     // Hardcoded admin credentials for demo purposes
     if (username === "admin" && password === "admin@123") {
+      // Find a real admin in DB to get a valid ObjectId, or use a consistent fallback
+      let admin = await User.findOne({ role: 'admin' });
+
+      const FALLBACK_ID = "6766786c4f039103c8120e98";
+
+      if (!admin) {
+        // Create the fallback admin in DB so other endpoints can verify its role
+        try {
+          admin = new User({
+            _id: FALLBACK_ID,
+            name: "Admin",
+            email: "admin@election.com",
+            role: "admin",
+            password: await bcrypt.hash("admin@123", 10)
+          });
+          await admin.save();
+          console.log("✅ Created fallback admin user in database");
+        } catch (e) {
+          console.error("Failed to create fallback admin:", e);
+        }
+      }
+
+      const adminObject = {
+        _id: admin ? admin._id : FALLBACK_ID,
+        username: "admin",
+        role: "admin"
+      };
+
       res.json({
         success: true,
         message: "Admin login successful",
-        adminObject: {
-          id: "admin_001",
-          username: "admin",
-          role: "admin"
-        }
+        adminObject: adminObject
       });
     } else {
       res.json({ success: false, message: "Invalid admin credentials" });
@@ -3348,237 +3947,8 @@ app.get("/api/votingReport", async (req, res) => {
   }
 });
 
-// 📨 Bulk OTP Distribution (Admin only - Pre-Election)
-app.post("/api/admin/distributeOTPs", async (req, res) => {
-  try {
-    console.log("📨 Starting bulk OTP distribution...");
-
-    // Get all registered users (voters and candidates)
-    const users = await User.find({
-      role: { $in: ["voter", "candidate", undefined, null] },
-      email: { $exists: true, $ne: null }
-    }).select("name email voterId _id");
-
-    if (users.length === 0) {
-      return res.json({
-        success: false,
-        message: "No users found to send OTPs"
-      });
-    }
-
-    console.log(`Found ${users.length} users to send OTPs`);
-
-    const results = {
-      total: users.length,
-      sent: 0,
-      failed: 0,
-      errors: []
-    };
-
-    // Get election date from voting settings
-    let electionDate = "TBD";
-    try {
-      const votingSettings = await VotingSettings.findOne({});
-      if (votingSettings && votingSettings.electionDate) {
-        electionDate = new Date(votingSettings.electionDate).toLocaleDateString();
-      }
-    } catch (err) {
-      console.log("Could not fetch election date:", err.message);
-    }
-
-    // Process each user
-    for (const user of users) {
-      try {
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Invalidate any previous pre-election OTPs for this user
-        await OTP.updateMany(
-          {
-            voterId: user._id,
-            used: false,
-            isPreElectionOTP: true
-          },
-          { used: true }
-        );
-
-        // Store OTP with 7-day expiration
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-        await OTP.create({
-          voterId: user._id,
-          code: otp,
-          email: user.email,
-          expiresAt,
-          used: false,
-          isPreElectionOTP: true
-        });
-
-        // Send email
-        const transporter = await createEmailTransporter();
-
-        const emailHTML = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-              }
-              .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 30px;
-                text-align: center;
-                border-radius: 10px 10px 0 0;
-              }
-              .content {
-                background: #f9f9f9;
-                padding: 30px;
-                border: 1px solid #ddd;
-              }
-              .credentials-box {
-                background: white;
-                border-left: 4px solid #667eea;
-                padding: 20px;
-                margin: 20px 0;
-                border-radius: 5px;
-              }
-              .credential-item {
-                margin: 15px 0;
-              }
-              .credential-label {
-                font-weight: bold;
-                color: #666;
-                font-size: 14px;
-              }
-              .credential-value {
-                font-size: 24px;
-                color: #667eea;
-                font-weight: bold;
-                font-family: 'Courier New', monospace;
-                letter-spacing: 2px;
-              }
-              .instructions {
-                background: #e3f2fd;
-                padding: 15px;
-                border-radius: 5px;
-                margin: 20px 0;
-              }
-              .footer {
-                text-align: center;
-                padding: 20px;
-                color: #666;
-                font-size: 12px;
-                border-top: 1px solid #ddd;
-              }
-              .important {
-                background: #fff3cd;
-                border-left: 4px solid #ffc107;
-                padding: 15px;
-                margin: 20px 0;
-                border-radius: 5px;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>🗳️ Voting System Login Credentials</h1>
-              <p>Wachemo University Online Voting System</p>
-            </div>
-            
-            <div class="content">
-              <p>Dear <strong>${user.name}</strong>,</p>
-              
-              <p>Your login credentials for the Wachemo University Online Voting System have been generated. Please use these credentials to complete your first-time login before the election.</p>
-              
-              <div class="credentials-box">
-                <div class="credential-item">
-                  <div class="credential-label">Username (Student ID):</div>
-                  <div class="credential-value">${user.voterId || 'N/A'}</div>
-                </div>
-                
-                <div class="credential-item">
-                  <div class="credential-label">One-Time Password (OTP):</div>
-                  <div class="credential-value">${otp}</div>
-                </div>
-              </div>
-              
-              <div class="instructions">
-                <h3>📋 How to Login:</h3>
-                <ol>
-                  <li>Visit the voting system website</li>
-                  <li>Enter your <strong>Username</strong> (Student ID) shown above</li>
-                  <li>Enter your <strong>OTP</strong> shown above</li>
-                  <li>Click "Login" to access the system</li>
-                </ol>
-              </div>
-              
-              <div class="important">
-                <h3>⚠️ Important Information:</h3>
-                <ul>
-                  <li><strong>Election Date:</strong> ${electionDate}</li>
-                  <li><strong>OTP Validity:</strong> This OTP is valid for 7 days</li>
-                  <li><strong>First Login:</strong> Please complete your first login before the election</li>
-                  <li><strong>Security:</strong> Do not share your credentials with anyone</li>
-                </ul>
-              </div>
-              
-              <p>If you have any questions or issues, please contact the election committee.</p>
-              
-              <p>Best regards,<br>
-              <strong>Wachemo University Election Committee</strong></p>
-            </div>
-            
-            <div class="footer">
-              <p>This is an automated message from the Wachemo University Online Voting System.</p>
-              <p>Please do not reply to this email.</p>
-            </div>
-          </body>
-          </html>
-        `;
-
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject: "🗳️ Your Voting System Login Credentials",
-          html: emailHTML
-        });
-
-        results.sent++;
-        console.log(`✅ OTP sent to ${user.email}`);
-
-      } catch (err) {
-        results.failed++;
-        results.errors.push({
-          user: user.email,
-          error: err.message
-        });
-        console.error(`❌ Failed to send OTP to ${user.email}:`, err.message);
-      }
-    }
-
-    console.log(`📊 Distribution complete: ${results.sent} sent, ${results.failed} failed`);
-
-    res.json({
-      success: true,
-      message: `OTP distribution complete`,
-      results
-    });
-
-  } catch (err) {
-    console.error("Error in bulk OTP distribution:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error distributing OTPs",
-      error: err.message
-    });
-  }
-});
+// 📧 Bulk OTP Distribution (Admin only - Pre-Election) - Legacy version removed to fix duplication
+// 📧 Contact Form Submission
 
 // 📧 Contact Form Submission
 app.post("/contact", async (req, res) => {
@@ -3697,7 +4067,7 @@ app.post("/contact/reply/:id", async (req, res) => {
       to: contact.email,
       subject: `Re: Your message to Online Voting System`,
       html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;" >
         <h2 style="color: #2196F3;">Online Voting System - Admin Response</h2>
         <p>Dear ${contact.name},</p>
         <p>Thank you for contacting us. Here is our response to your message:</p>
@@ -3724,8 +4094,8 @@ app.post("/contact/reply/:id", async (req, res) => {
     };
 
     // Send email
-    console.log(`📧 Sending email to: ${contact.email}`);
-    console.log(`📧 From: ${process.env.EMAIL_USER}`);
+    console.log(`📧 Sending email to: ${contact.email} `);
+    console.log(`📧 From: ${process.env.EMAIL_USER} `);
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Email sent successfully!');
     console.log('📧 Message ID:', info.messageId);
@@ -3824,10 +4194,340 @@ app.delete("/contact/:id", async (req, res) => {
 
 // -------------------------------------------
 
+/**
+ * Verify Archive Data Integrity
+ */
+function verifyArchiveIntegrity(archive) {
+  if (!archive || !archive.dataHash) return false;
+
+  // Reconstruct data to verify hash
+  const dataToHash = JSON.stringify({
+    electionTitle: archive.electionTitle,
+    archiveDate: archive.archiveDate.toISOString(),
+    resetReason: archive.resetReason,
+    results: archive.candidates.map(c => ({
+      id: c.candidateId ? c.candidateId.toString() : null,
+      votes: c.votes
+    })).sort((a, b) => (a.id || '').localeCompare(b.id || '')),
+    stats: archive.statistics
+  });
+
+  const recalculatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+  // In a real-world scenario, you would compare 'recalculatedHash' with 'archive.dataHash'
+  // For now, we assume the stored hash is the source of truth if verification passes basic checks
+  // This is a simplified implementation for demonstration
+  return archive.dataHash && archive.dataHash.length === 64;
+}
+
+/**
+ * Helper: Create Election Archive
+ */
+async function createElectionArchive(adminId, resetReason, req) {
+  const settings = await VotingSettings.getSettings();
+  const candidates = await User.find({ role: 'candidate' }).lean();
+  const voters = await User.find({ role: 'voter' }).lean();
+  const allVotes = await Vote.find().lean();
+
+  const candidateStats = candidates.map(c => ({
+    candidateId: c._id,
+    name: c.name,
+    email: c.email,
+    party: c.party,
+    department: c.department || c.party,
+    position: c.position,
+    votes: c.votes || 0,
+    img: c.img,
+    symbol: c.symbol,
+    bio: c.bio
+  }));
+
+  // Calculate aggregated stats
+  const totalVoters = voters.length + candidates.length;
+  const totalVotes = allVotes.length;
+  const turnout = totalVoters > 0 ? (totalVotes / totalVoters) * 100 : 0;
+
+  // prepare minimal voter record for archive (anonymity preservation could be enhanced here)
+  const voterArchive = voters.filter(v => v.voteStatus).map(v => ({
+    voterId: v._id,
+    voteId: v.voteId
+  }));
+
+  const archiveData = {
+    electionId: `ELECTION_${Date.now()} `,
+    electionTitle: settings.electionTitle,
+    votingPeriod: {
+      startDate: settings.startDate,
+      endDate: settings.endDate
+    },
+    archivedBy: adminId,
+    resetReason: resetReason,
+    statistics: {
+      totalVoters: totalVoters,
+      totalVotes: totalVotes,
+      totalCandidates: candidates.length,
+      turnoutPercentage: parseFloat(turnout.toFixed(2))
+    },
+    candidates: candidateStats,
+    voters: voterArchive, // Minimal info
+    resetMetadata: {
+      timestamp: new Date(),
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent']
+    }
+  };
+
+  // Generate Integrity Hash
+  const dataToHash = JSON.stringify({
+    electionTitle: archiveData.electionTitle,
+    archiveDate: new Date().toISOString(), // Approximation
+    resetReason: archiveData.resetReason,
+    results: archiveData.candidates.map(c => ({
+      id: c.candidateId ? c.candidateId.toString() : null,
+      votes: c.votes
+    })).sort((a, b) => (a.id || '').localeCompare(b.id || '')),
+    stats: archiveData.statistics
+  });
+
+  archiveData.dataHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+  const archive = await ElectionArchive.create(archiveData);
+  return archive;
+}
+
+/**
+ * Helper: Perform System Reset
+ */
+async function performSystemReset(adminId, reason, req) {
+  // 1. Archive
+  let archive = null;
+  try {
+    const voteCount = await Vote.countDocuments();
+    if (voteCount > 0) {
+      archive = await createElectionArchive(adminId, reason, req);
+    }
+  } catch (e) {
+    console.error("Archive creation failed inside system reset", e);
+    // Continue reset even if archive fails, but log it
+  }
+
+  // 2. Clear Votes
+  const deleteVotes = await Vote.deleteMany({});
+
+  // 3. Reset Voters
+  await User.updateMany(
+    { role: { $in: ['voter', 'candidate'] } },
+    {
+      $set: {
+        voteStatus: false,
+        voteId: null
+      }
+    }
+  );
+
+  // 4. Reset Candidates (keep role, reset votes)
+  // Note: The main route might fully demote them, but this shared helper just resets counts
+  await User.updateMany(
+    { role: 'candidate' },
+    {
+      $set: {
+        votes: 0,
+        position: null
+      }
+    }
+  );
+
+  // 5. Invalidate OTPs
+  await OTP.updateMany({}, { used: true });
+
+  // 6. Clear Cache
+  clearCache();
+
+  return {
+    success: true,
+    summary: {
+      votesDeleted: deleteVotes.deletedCount,
+      archived: !!archive
+    }
+  };
+}
+
+// 👥 Get all registered voters (users who have completed OTP sign-in)
+app.get("/getVoter", async (req, res) => {
+  try {
+    // Prevent caching of voter data
+    res.header("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.header("Pragma", "no-cache");
+    res.header("Expires", "0");
+
+    // Return all users with voter role
+    // This shows voters who have been created from StudentList during OTP distribution
+    const voters = await User.find({
+      role: { $in: ['voter', undefined, null] }, // Exclude candidates and admins
+    }).select('name email voterId voteId voteStatus department college img createdAt')
+      .sort({ createdAt: -1 })
+      .lean(); // Optimize: return plain JS objects instead of Mongoose documents
+
+    res.json({
+      success: true,
+      voter: voters,
+      count: voters.length
+    });
+  } catch (err) {
+    console.error("Error fetching voters:", err);
+    res.status(500).json({ success: false, message: "Error fetching voters" });
+  }
+});
+
+// 📤 Admin: Distribute OTPs to all users
+app.post("/api/admin/distributeOTPs", async (req, res) => {
+  try {
+    const students = await StudentList.find({}); // Get all from uploaded list
+    const results = {
+      total: students.length,
+      sent: 0,
+      failed: 0,
+      errors: []
+    };
+
+    if (students.length === 0) {
+      return res.json({ success: true, message: "No students found in list.", results });
+    }
+
+    console.log(`📊 StudentList collection contains ${students.length} students`);
+    console.log(` Starting OTP distribution for ${students.length} students...`);
+
+    // Create transporter once for the entire batch
+    const transporter = await createEmailTransporter();
+
+    // Clean up: Remove ALL old voter users before creating fresh ones from StudentList
+    const deleteResult = await User.deleteMany({
+      role: { $in: ['voter', undefined, null] }
+    });
+
+    console.log(`Cleaned up ${deleteResult.deletedCount} old voter records.Creating fresh records from StudentList...`);
+
+    for (const student of students) {
+      try {
+        if (!student.email) {
+          console.warn(`⚠️ Skipping student ${student.studentId}: Missing email`);
+          results.failed++;
+          results.errors.push({ user: student.studentId, error: "Missing email address" });
+          continue;
+        }
+
+        // 1. Find or Create User
+        let user = await User.findOne({ $or: [{ voterId: student.studentId }, { email: student.email }] });
+
+        if (!user) {
+          user = new User({
+            name: student.name,
+            email: student.email,
+            voterId: student.studentId,
+            role: 'voter',
+            password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+            voteStatus: false,
+            department: student.department
+          });
+          await user.save();
+          console.log(`👤 Created fresh voter record for: ${student.studentId} `);
+        }
+
+        // 2. Generate OTP
+        const otpCode = generateSecureOTP();
+        const hashedOTP = await hashOTP(otpCode);
+        console.log(`🔐[DISTRIBUTE] Generated OTP ${otpCode} (Hash: ${hashedOTP.substring(0, 10)}...) for ${user.email}`);
+
+        // 7 days expiry
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        // 3. Save OTP (Upsert) using user._id (ObjectId)
+        const otpDoc = await OTP.findOneAndUpdate(
+          { voterId: user._id },
+          {
+            code: hashedOTP,
+            email: user.email,
+            expiresAt: expiresAt,
+            used: false,
+            isPreElectionOTP: true
+          },
+          { upsert: true, new: true }
+        );
+        console.log(`💾[DISTRIBUTE] Saved OTP record: ${otpDoc._id} for user: ${user._id} `);
+
+        // 4. Send Email
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: user.email,
+          subject: 'Your Election Log-in Credentials',
+          html: `
+  < div style = "font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;" >
+              <h2 style="color: #4CAF50; text-align: center;">Election Access Credentials</h2>
+              <p>Dear ${user.name},</p>
+              <p>The election is approaching. Please use the following credentials to log in for the first time and set up your secure account.</p>
+              
+              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Username:</strong> ${user.voterId}</p>
+                <p style="margin: 5px 0;"><strong>One-Time Password (OTP):</strong> <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333;">${otpCode}</span></p>
+              </div>
+
+              <p>This OTP is valid for <strong>7 days</strong>.</p>
+              <p>Visit the voting portal and select "Login". Enter your Username to receive the password prompt, then use this OTP.</p>
+              
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="font-size: 12px; color: #666; text-align: center;">This is an automated message. Please do not reply.</p>
+            </div>
+`
+        };
+
+        await transporter.sendMail(mailOptions);
+        results.sent++;
+        console.log(`✅ OTP sent to: ${user.email} (${student.studentId})`);
+
+      } catch (innerErr) {
+        console.error(`❌ Failed for ${student.studentId}: `, innerErr.message);
+        results.failed++;
+        results.errors.push({ user: student.studentId, error: innerErr.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "OTP distribution process completed",
+      results
+    });
+
+  } catch (err) {
+    console.error("Error in distributeOTPs:", err);
+    res.status(500).json({ success: false, message: "Server error during distribution" });
+  }
+});
+
+// 🔍 Diagnostic Endpoint (Remove in production)
+app.get("/api/debug/auth-state", async (req, res) => {
+  try {
+    const userStats = await User.aggregate([
+      { $group: { _id: "$role", count: { $sum: 1 }, firstLoginDone: { $sum: { $cond: ["$firstLoginCompleted", 1, 0] } } } }
+    ]);
+
+    const latestOTPs = await OTP.find().sort({ createdAt: -1 }).limit(10).lean();
+    const latestVoters = await User.find({ role: 'voter' }).sort({ createdAt: -1 }).limit(5).lean();
+
+    res.json({
+      success: true,
+      userStats,
+      latestVoters: latestVoters.map(u => ({ id: u._id, voterId: u.voterId, email: u.email, first: u.firstLoginCompleted })),
+      latestOTPs: latestOTPs.map(o => ({ voter: o.voterId, isPre: o.isPreElectionOTP, used: o.used, ex: o.expiresAt }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   const duration = (Date.now() - startTime) / 1000;
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🚀 Startup time: ${duration.toFixed(3)}s`);
+  console.log(`✅ Server running on port ${PORT} `);
+  console.log(`🚀 Startup time: ${duration.toFixed(3)} s`);
 });

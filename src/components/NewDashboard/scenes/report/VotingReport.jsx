@@ -1,4 +1,4 @@
-import { Box, Button, Typography, useTheme, Card, CardContent, Grid } from "@mui/material";
+import { Box, Button, Typography, useTheme, Card, CardContent, Grid, CircularProgress } from "@mui/material";
 import { tokens } from "../../theme";
 import Header from "../../newComponents/Header";
 import { useState, useEffect } from "react";
@@ -10,58 +10,60 @@ import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import HowToVoteOutlinedIcon from "@mui/icons-material/HowToVoteOutlined";
 import PercentOutlinedIcon from "@mui/icons-material/PercentOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import StatBox from "../../newComponents/StatBox";
 
 const VotingReport = () => {
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
-    const [reportData, setReportData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchReport();
-    }, []);
+  useEffect(() => {
+    fetchReport();
+  }, []);
 
-    const fetchReport = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get(`${BASE_URL}/api/votingReport`);
-            if (response.data.success) {
-                setReportData(response.data.report);
-            } else {
-                setError("Failed to load report");
-            }
-        } catch (err) {
-            console.error("Error fetching report:", err);
-            setError("Error loading voting report");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchReport = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/api/votingReport`);
+      if (response.data.success) {
+        setReportData(response.data.report);
+      } else {
+        setError("Failed to load report");
+      }
+    } catch (err) {
+      console.error("Error fetching report:", err);
+      setError("Error loading voting report");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleDownloadPDF = () => {
-        if (!reportData) return;
+  const handleDownloadPDF = () => {
+    if (!reportData) return;
 
-        // Create a printable version
-        const printWindow = window.open('', '_blank');
-        const reportHTML = generateReportHTML();
+    // Create a printable version
+    const printWindow = window.open('', '_blank');
+    const reportHTML = generateReportHTML();
 
-        printWindow.document.write(reportHTML);
-        printWindow.document.close();
-        printWindow.focus();
+    printWindow.document.write(reportHTML);
+    printWindow.document.close();
+    printWindow.focus();
 
-        // Trigger print dialog
-        setTimeout(() => {
-            printWindow.print();
-        }, 250);
-    };
+    // Trigger print dialog
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
 
-    const generateReportHTML = () => {
-        if (!reportData) return '';
+  const generateReportHTML = () => {
+    if (!reportData) return '';
 
-        const { summary, candidateResults, voteDetails, positionBreakdown, statistics } = reportData;
+    const { summary, candidateResults, voteDetails, positionBreakdown, statistics } = reportData;
 
-        return `
+    return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -220,288 +222,299 @@ const VotingReport = () => {
       </body>
       </html>
     `;
-    };
+  };
 
-    // Columns for candidate results table
-    const candidateColumns = [
-        { field: "rank", headerName: "Rank", width: 80 },
-        { field: "name", headerName: "Name", width: 200 },
-        { field: "studentId", headerName: "Student ID", width: 130 },
-        { field: "department", headerName: "Department", width: 180 },
-        { field: "position", headerName: "Position", width: 180 },
-        { field: "votes", headerName: "Votes", width: 100 },
-        { field: "percentage", headerName: "Percentage", width: 120 },
-    ];
+  // Columns for candidate results table
+  const candidateColumns = [
+    { field: "rank", headerName: "Rank", width: 80 },
+    { field: "name", headerName: "Name", width: 200 },
+    { field: "studentId", headerName: "Student ID", width: 130 },
+    { field: "department", headerName: "Department", width: 180 },
+    { field: "position", headerName: "Position", width: 180 },
+    { field: "votes", headerName: "Votes", width: 100 },
+    { field: "percentage", headerName: "Percentage", width: 120 },
+  ];
 
-    // Columns for vote details table
-    const voteColumns = [
-        { field: "voteId", headerName: "Vote ID", width: 200 },
-        { field: "candidateName", headerName: "Candidate", width: 200 },
-        { field: "position", headerName: "Position", width: 180 },
-        { field: "timestamp", headerName: "Timestamp", width: 200 },
-    ];
+  // Columns for vote details table
+  const voteColumns = [
+    { field: "voteId", headerName: "Vote ID", width: 200 },
+    { field: "candidateName", headerName: "Candidate", width: 200 },
+    { field: "position", headerName: "Position", width: 180 },
+    { field: "timestamp", headerName: "Timestamp", width: 200 },
+  ];
 
-    if (loading) {
-        return (
-            <Box m="20px">
-                <Header title="VOTING REPORT" subtitle="Loading report data..." />
-                <Typography>Loading...</Typography>
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Box m="20px">
-                <Header title="VOTING REPORT" subtitle="Error loading report" />
-                <Typography color="error">{error}</Typography>
-                <Button variant="contained" onClick={fetchReport} sx={{ mt: 2 }}>
-                    Retry
-                </Button>
-            </Box>
-        );
-    }
-
-    if (!reportData) {
-        return (
-            <Box m="20px">
-                <Header title="VOTING REPORT" subtitle="No data available" />
-            </Box>
-        );
-    }
-
-    const { summary, candidateResults, voteDetails, statistics } = reportData;
-
-    // Prepare data for DataGrid
-    const candidateRows = candidateResults.map((candidate, index) => ({
-        id: candidate.id,
-        rank: index + 1,
-        name: candidate.name,
-        studentId: candidate.studentId,
-        department: candidate.department,
-        position: candidate.position,
-        votes: candidate.votes,
-        percentage: `${candidate.percentage}%`,
-    }));
-
-    const voteRows = voteDetails.map((vote, index) => ({
-        id: index,
-        voteId: vote.voteId,
-        candidateName: vote.candidateName,
-        position: vote.position,
-        timestamp: new Date(vote.timestamp).toLocaleString(),
-    }));
-
+  if (loading) {
     return (
-        <Box m="20px">
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Header title="VOTING REPORT" subtitle="Comprehensive Election Results and Statistics" />
-                <Button
-                    sx={{
-                        backgroundColor: colors.blueAccent[700],
-                        color: colors.grey[100],
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        padding: "10px 20px",
-                    }}
-                    onClick={handleDownloadPDF}
-                >
-                    <DownloadOutlinedIcon sx={{ mr: "10px" }} />
-                    Download PDF Report
-                </Button>
-            </Box>
-
-            {/* Summary Statistics */}
-            <Grid container spacing={2} sx={{ mt: 2 }}>
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ backgroundColor: colors.primary[400] }}>
-                        <CardContent>
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Box>
-                                    <Typography variant="h5" color={colors.grey[100]}>
-                                        Total Voters
-                                    </Typography>
-                                    <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                        {summary.totalVoters}
-                                    </Typography>
-                                </Box>
-                                <PeopleOutlinedIcon sx={{ fontSize: 40, color: colors.greenAccent[600] }} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ backgroundColor: colors.primary[400] }}>
-                        <CardContent>
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Box>
-                                    <Typography variant="h5" color={colors.grey[100]}>
-                                        Votes Cast
-                                    </Typography>
-                                    <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                        {summary.totalVotesCast}
-                                    </Typography>
-                                </Box>
-                                <HowToVoteOutlinedIcon sx={{ fontSize: 40, color: colors.greenAccent[600] }} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ backgroundColor: colors.primary[400] }}>
-                        <CardContent>
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Box>
-                                    <Typography variant="h5" color={colors.grey[100]}>
-                                        Turnout
-                                    </Typography>
-                                    <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                        {summary.turnoutPercentage}%
-                                    </Typography>
-                                </Box>
-                                <PercentOutlinedIcon sx={{ fontSize: 40, color: colors.greenAccent[600] }} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                    <Card sx={{ backgroundColor: colors.primary[400] }}>
-                        <CardContent>
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Box>
-                                    <Typography variant="h5" color={colors.grey[100]}>
-                                        Candidates
-                                    </Typography>
-                                    <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                        {summary.totalCandidates}
-                                    </Typography>
-                                </Box>
-                                <EmojiEventsOutlinedIcon sx={{ fontSize: 40, color: colors.greenAccent[600] }} />
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
-
-            {/* Candidate Results Table */}
-            <Box
-                mt="40px"
-                height="400px"
-                sx={{
-                    "& .MuiDataGrid-root": {
-                        border: "none",
-                    },
-                    "& .MuiDataGrid-cell": {
-                        borderBottom: "none",
-                    },
-                    "& .MuiDataGrid-columnHeaders": {
-                        backgroundColor: colors.blueAccent[700],
-                        borderBottom: "none",
-                    },
-                    "& .MuiDataGrid-virtualScroller": {
-                        backgroundColor: colors.primary[400],
-                    },
-                    "& .MuiDataGrid-footerContainer": {
-                        borderTop: "none",
-                        backgroundColor: colors.blueAccent[700],
-                    },
-                }}
-            >
-                <Typography variant="h4" sx={{ mb: 2 }}>
-                    Candidate Results
-                </Typography>
-                <DataGrid rows={candidateRows} columns={candidateColumns} />
-            </Box>
-
-            {/* Vote Details Table */}
-            <Box
-                mt="40px"
-                height="400px"
-                sx={{
-                    "& .MuiDataGrid-root": {
-                        border: "none",
-                    },
-                    "& .MuiDataGrid-cell": {
-                        borderBottom: "none",
-                    },
-                    "& .MuiDataGrid-columnHeaders": {
-                        backgroundColor: colors.blueAccent[700],
-                        borderBottom: "none",
-                    },
-                    "& .MuiDataGrid-virtualScroller": {
-                        backgroundColor: colors.primary[400],
-                    },
-                    "& .MuiDataGrid-footerContainer": {
-                        borderTop: "none",
-                        backgroundColor: colors.blueAccent[700],
-                    },
-                }}
-            >
-                <Typography variant="h4" sx={{ mb: 2 }}>
-                    Vote Details (Audit Trail with Vote IDs)
-                </Typography>
-                <DataGrid rows={voteRows} columns={voteColumns} />
-            </Box>
-
-            {/* Statistics */}
-            <Box mt="40px">
-                <Typography variant="h4" sx={{ mb: 2 }}>
-                    Additional Statistics
-                </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ backgroundColor: colors.primary[400], p: 2 }}>
-                            <Typography variant="h6" color={colors.grey[100]}>
-                                Average Votes per Candidate
-                            </Typography>
-                            <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                {statistics.averageVotesPerCandidate}
-                            </Typography>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ backgroundColor: colors.primary[400], p: 2 }}>
-                            <Typography variant="h6" color={colors.grey[100]}>
-                                Highest Votes
-                            </Typography>
-                            <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                {statistics.highestVotes}
-                            </Typography>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ backgroundColor: colors.primary[400], p: 2 }}>
-                            <Typography variant="h6" color={colors.grey[100]}>
-                                Lowest Votes
-                            </Typography>
-                            <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>
-                                {statistics.lowestVotes}
-                            </Typography>
-                        </Card>
-                    </Grid>
-                </Grid>
-            </Box>
-
-            {/* Report Info */}
-            <Box mt="40px" p="20px" sx={{ backgroundColor: colors.primary[400], borderRadius: "4px" }}>
-                <Typography variant="h6" color={colors.grey[100]}>
-                    Report Information
-                </Typography>
-                <Typography variant="body2" color={colors.grey[100]} mt={1}>
-                    Report Generated: {new Date(summary.reportGeneratedAt).toLocaleString()}
-                </Typography>
-                <Typography variant="body2" color={colors.grey[100]}>
-                    Election Date: {new Date(summary.electionDate).toLocaleDateString()}
-                </Typography>
-                <Typography variant="body2" color={colors.grey[100]} mt={2}>
-                    This report includes Vote IDs for audit trail purposes. All votes are tracked securely.
-                </Typography>
-            </Box>
-        </Box>
+      <Box m="20px">
+        <Header title="VOTING REPORT" subtitle="Loading report data..." />
+        <Typography>Loading...</Typography>
+      </Box>
     );
+  }
+
+  if (error) {
+    return (
+      <Box m="20px">
+        <Header title="VOTING REPORT" subtitle="Error loading report" />
+        <Typography color="error">{error}</Typography>
+        <Button variant="contained" onClick={fetchReport} sx={{ mt: 2 }}>
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!reportData) {
+    return (
+      <Box m="20px">
+        <Header title="VOTING REPORT" subtitle="No data available" />
+      </Box>
+    );
+  }
+
+  const { summary, candidateResults, voteDetails, statistics } = reportData;
+
+  // Prepare data for DataGrid
+  const candidateRows = candidateResults.map((candidate, index) => ({
+    id: candidate.id,
+    rank: index + 1,
+    name: candidate.name,
+    studentId: candidate.studentId,
+    department: candidate.department,
+    position: candidate.position,
+    votes: candidate.votes,
+    percentage: `${candidate.percentage}%`,
+  }));
+
+  const voteRows = voteDetails.map((vote, index) => ({
+    id: index,
+    voteId: vote.voteId,
+    candidateName: vote.candidateName,
+    position: vote.position,
+    timestamp: new Date(vote.timestamp).toLocaleString(),
+  }));
+
+  return (
+    <Box m="20px">
+      <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+        <Header title="VOTING REPORT" subtitle="Comprehensive Election Results and Statistics" />
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: colors.blueAccent[600],
+            color: colors.grey[100],
+            fontSize: "14px",
+            fontWeight: "bold",
+            padding: "12px 24px",
+            borderRadius: "12px",
+            boxShadow: `0 4px 14px 0 ${colors.blueAccent[800]}`,
+            transition: "all 0.3s ease",
+            "&:hover": {
+              backgroundColor: colors.blueAccent[700],
+              transform: "translateY(-2px)",
+              boxShadow: `0 6px 20px 0 ${colors.blueAccent[800]}`,
+            }
+          }}
+          onClick={handleDownloadPDF}
+        >
+          <DownloadOutlinedIcon sx={{ mr: "10px" }} />
+          Download PDF Report
+        </Button>
+      </Box>
+
+      {/* Summary Statistics */}
+      <Grid container spacing={3} sx={{ mt: 2 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatBox
+            title={summary.totalVoters}
+            subtitle="Total Registered Voters"
+            icon={<PeopleOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <StatBox
+            title={summary.totalVotesCast}
+            subtitle="Total Votes Cast"
+            icon={<HowToVoteOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <StatBox
+            title={summary.turnoutPercentage}
+            subtitle="Voter Turnout %"
+            icon={<PercentOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <StatBox
+            title={summary.totalCandidates}
+            subtitle="Total Candidates"
+            icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Candidate Results Table */}
+      <Card
+        sx={{
+          mt: "40px",
+          backgroundColor: colors.primary[400],
+          borderRadius: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+        }}
+      >
+        <CardContent sx={{ p: "24px !important" }}>
+          <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: colors.grey[100] }}>
+            Candidate Results
+          </Typography>
+          <Box
+            height="480px"
+            sx={{
+              "& .MuiDataGrid-root": {
+                border: "none",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: `1px solid ${colors.primary[500]}`,
+                fontSize: "14px",
+              },
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "rgba(134, 141, 251, 0.1)",
+                color: colors.blueAccent[300],
+                borderBottom: `2px solid ${colors.primary[500]}`,
+                fontSize: "15px",
+                fontWeight: "bold",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                backgroundColor: "transparent",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: `1px solid ${colors.primary[500]}`,
+                backgroundColor: "transparent",
+              },
+              "& .MuiDataGrid-columnSeparator": {
+                display: "none",
+              }
+            }}
+          >
+            <DataGrid rows={candidateRows} columns={candidateColumns} />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Vote Details Table */}
+      <Card
+        sx={{
+          mt: "40px",
+          backgroundColor: colors.primary[400],
+          borderRadius: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+        }}
+      >
+        <CardContent sx={{ p: "24px !important" }}>
+          <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: colors.grey[100] }}>
+            Vote Details (Audit Trail)
+          </Typography>
+          <Box
+            height="480px"
+            sx={{
+              "& .MuiDataGrid-root": {
+                border: "none",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: `1px solid ${colors.primary[500]}`,
+                fontSize: "14px",
+              },
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "rgba(104, 112, 250, 0.1)",
+                color: colors.blueAccent[300],
+                borderBottom: `2px solid ${colors.primary[500]}`,
+                fontSize: "15px",
+                fontWeight: "bold",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                backgroundColor: "transparent",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: `1px solid ${colors.primary[500]}`,
+                backgroundColor: "transparent",
+              },
+              "& .MuiDataGrid-columnSeparator": {
+                display: "none",
+              }
+            }}
+          >
+            <DataGrid rows={voteRows} columns={voteColumns} />
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Statistics */}
+      <Box mt="40px">
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 700 }}>
+          Additional Statistics
+        </Typography>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <StatBox
+              title={statistics.averageVotesPerCandidate}
+              subtitle="Avg Votes per Candidate"
+              icon={<AssessmentOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <StatBox
+              title={statistics.highestVotes}
+              subtitle="Highest Votes"
+              icon={<EmojiEventsOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <StatBox
+              title={statistics.lowestVotes}
+              subtitle="Lowest Votes"
+              icon={<HowToVoteOutlinedIcon sx={{ fontSize: 35, color: colors.greenAccent[500] }} />}
+            />
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Report Info */}
+      <Card
+        sx={{
+          mt: "40px",
+          backgroundColor: "rgba(134, 141, 251, 0.05)",
+          borderRadius: "16px",
+          border: `1px solid ${colors.primary[500]}`,
+        }}
+      >
+        <CardContent>
+          <Typography variant="h6" color={colors.greenAccent[500]} fontWeight="bold" gutterBottom>
+            Report Information
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" color={colors.grey[100]}>
+                <strong>Report Generated:</strong> {new Date(summary.reportGeneratedAt).toLocaleString()}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" color={colors.grey[100]}>
+                <strong>Election Date:</strong> {new Date(summary.electionDate).toLocaleDateString()}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color={colors.grey[300]} sx={{ mt: 1, fontStyle: "italic" }}>
+                This report includes secure Vote IDs for audit trail purposes. All data is verified and encrypted.
+              </Typography>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Box>
+  );
 };
 
 export default VotingReport;

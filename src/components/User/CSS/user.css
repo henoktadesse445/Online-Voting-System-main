@@ -1,8 +1,11 @@
-.User{
-    background-color: black;
+.User {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     overflow-x: hidden;
+    min-height: 100vh;
 }
-.User .Heading2{
+
+.User .Heading2 {
     /* border: 1px solid black; */
     margin: 1rem;
     justify-content: center;
@@ -10,43 +13,46 @@
     text-align: center;
     padding: 0.5rem;
 }
-.User .Heading2 h3{
-    color:white;
+
+.User .Heading2 h3 {
+    color: var(--text-primary);
 }
-.User .Heading2 h3 span{
-    color:#89c4ee;
+
+.User .Heading2 h3 span {
+    color: #89c4ee;
     font-weight: bold;
 }
-.userPage{
+
+.userPage {
     /* background-color: black; */
     margin: 1rem 0rem;
     display: grid;
     grid-template-columns: 35% 65%;
 }
-.userDetails{
+
+.userDetails {
     /* border: 1px solid green; */
     margin: 1rem;
     /* background-color: whitesmoke; */
 }
-h3{
 
-}
-
-.details{
+.details {
     /* border: 1px solid red; */
     margin: 1rem;
-    color:white;
+    color: var(--text-primary);
 }
-.details h2{
-    color:white;
 
+.details h2 {
+    color: var(--text-primary);
 }
-.details p{
+
+.details p {
     text-align: justify;
+    color: var(--text-secondary);
 }
 
 @media (max-width: 1024px) {
-    .userPage{
+    .userPage {
         /* background-color: black; */
         margin: 1rem 0rem;
         display: block;

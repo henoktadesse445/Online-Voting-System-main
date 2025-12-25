@@ -16,20 +16,28 @@ const Topbar = () => {
     const colors = tokens(theme.palette.mode);
     const colorMode = useContext(ColorModeContext);
     const [redirectToHome, setRedirectToHome] = useState(false);
-    
+
 
     const handleLogout = () => {
-        // Clear any session data
+        // Save theme
+        const currentTheme = localStorage.getItem("theme");
+
+        // Clear session data
         localStorage.clear();
         sessionStorage.clear();
-        
+
+        // Restore theme
+        if (currentTheme) {
+            localStorage.setItem("theme", currentTheme);
+        }
+
         // Clear cookies if any
         document.cookie.split(";").forEach((c) => {
             document.cookie = c
                 .replace(/^ +/, "")
                 .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
-        
+
         // Redirect to home
         setRedirectToHome(true);
     };
@@ -40,11 +48,33 @@ const Topbar = () => {
 
 
     return (
-        <Box display="flex" justifyContent="space-between" p={2}>
+        <Box
+            display="flex"
+            justifyContent="space-between"
+            p={2}
+            sx={{
+                backdropFilter: "blur(10px)",
+                backgroundColor: "rgba(20, 27, 45, 0.7)",
+                position: "sticky",
+                top: 0,
+                zIndex: 1000,
+                borderBottom: `1px solid ${colors.primary[400]}`,
+            }}
+        >
             {/* Search Bar */}
-            <Box display="flex" backgroundColor={colors.primary[400]} borderRadius="3px">
-                <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search" />
-                <IconButton type="Button" sx={{ p: 1 }}>
+            <Box
+                display="flex"
+                backgroundColor={colors.primary[400]}
+                borderRadius="10px"
+                sx={{
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                        backgroundColor: colors.primary[300],
+                    }
+                }}
+            >
+                <InputBase sx={{ ml: 2, flex: 1, color: colors.grey[100] }} placeholder="Search" />
+                <IconButton type="Button" sx={{ p: 1, color: colors.grey[100] }}>
                     <SearchIcon />
                 </IconButton>
             </Box>
@@ -55,8 +85,6 @@ const Topbar = () => {
                     ) : (
                         <LightModeOutlinedIcon />
                     )}
-
-                    {/* <LightModeOutlinedIcon /> */}
                 </IconButton>
                 <IconButton>
                     <NotificationsOutlinedIcon />
@@ -67,7 +95,6 @@ const Topbar = () => {
                 <IconButton onClick={handleLogout}>
                     <LogoutOutlinedIcon />
                 </IconButton>
-
             </Box>
         </Box>
     )

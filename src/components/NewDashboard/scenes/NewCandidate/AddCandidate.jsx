@@ -64,7 +64,7 @@ const AddCandidate = () => {
         for (const key in formData) {
             formDataToSend.append(key, formData[key]);
         }
-        // console.log(formData);
+
 
         try {
             const response = await axios.post(`${BASE_URL}/createCandidate`, formDataToSend, {
@@ -105,7 +105,7 @@ const AddCandidate = () => {
                 <Sidebar />
                 <main className="content">
                     <Topbar />
-                    <ToastContainer/>
+                    <ToastContainer />
                     <Box m="0px 20px">
                         <Header title="CREATE NEW CANDIDATE" subtitle="Create a New Candidate Profile" />
                         <br></br>

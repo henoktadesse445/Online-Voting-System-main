@@ -9,8 +9,15 @@ import { DataGrid } from '@mui/x-data-grid';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import SendIcon from "@mui/icons-material/Send";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
+import { Card, CardContent, Grid, CircularProgress } from '@mui/material';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const StudentListInfo = () => {
   const [theme, colorMode] = useMode();
@@ -29,6 +36,12 @@ const StudentListInfo = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState('');
+
+  // OTP Distribution State
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpResult, setOtpResult] = useState(null);
+  const [otpError, setOtpError] = useState(null);
+  const [openOtpDialog, setOpenOtpDialog] = useState(false);
 
   const [columns, setColumns] = useState([
     { field: 'studentId', headerName: 'STUDENT ID', flex: 1 },
@@ -60,7 +73,7 @@ const StudentListInfo = () => {
           // We'll prioritize standard columns, then add the rest
           const firstRow = studentData[0];
           const keys = Object.keys(firstRow).filter(k =>
-            !['_id', '__v', 'updatedAt', 'status', 'createdAt', 'studentId', 'name', 'email'].includes(k)
+            !['_id', '__v', 'updatedAt', 'status', 'createdAt', 'studentId', 'name', 'email', 'department', 'cgpa'].includes(k)
           );
 
           const dynamicCols = keys.map(key => ({
@@ -165,9 +178,51 @@ const StudentListInfo = () => {
   const handleCloseUploadDialog = () => {
     if (!uploadLoading) {
       setOpenUploadDialog(false);
-      setFile(null);
       setUploadResult(null);
       setUploadError('');
+    }
+  };
+
+  const handleDistributeOTPs = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to send OTPs to all registered users? This will send emails to all voters and candidates."
+    );
+
+    if (!confirmed) return;
+
+    setOtpLoading(true);
+    setOtpError(null);
+    setOtpResult(null);
+    setOpenOtpDialog(true); // Open dialog to show progress/results
+
+    try {
+      const response = await axios.post(`${BASE_URL}/api/admin/distributeOTPs`);
+
+      if (response.data.success) {
+        setOtpResult(response.data.results);
+        toast.success(`✅ OTPs distributed successfully! Sent to ${response.data.results.sent} students.`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      } else {
+        setOtpError(response.data.message);
+        toast.error(response.data.message || "Failed to distribute OTPs");
+      }
+    } catch (err) {
+      console.error("Error distributing OTPs:", err);
+      const errorMsg = err.response?.data?.message || "Failed to distribute OTPs";
+      setOtpError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleCloseOtpDialog = () => {
+    if (!otpLoading) {
+      setOpenOtpDialog(false);
+      setOtpResult(null);
+      setOtpError(null);
     }
   };
 
@@ -224,6 +279,19 @@ const StudentListInfo = () => {
                   </Button>
                   <Button
                     variant="contained"
+                    sx={{
+                      ml: 1,
+                      backgroundColor: colors.greenAccent[600],
+                      '&:hover': { backgroundColor: colors.greenAccent[700] }
+                    }}
+                    startIcon={<SendIcon />}
+                    onClick={handleDistributeOTPs}
+                    disabled={loading || otpLoading}
+                  >
+                    Distribute OTPs
+                  </Button>
+                  <Button
+                    variant="contained"
                     color="error"
                     startIcon={<DeleteIcon />}
                     onClick={() => setOpenDeleteDialog(true)}
@@ -270,6 +338,7 @@ const StudentListInfo = () => {
             </Box>
           </main>
         </div>
+        <ToastContainer />
 
         {/* Delete Confirmation Dialog */}
         <Dialog
@@ -368,6 +437,90 @@ const StudentListInfo = () => {
           </DialogContent>
           <DialogActions sx={{ backgroundColor: colors.primary[400] }}>
             <Button onClick={handleCloseUploadDialog} sx={{ color: colors.grey[100] }}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* OTP Distribution Results Dialog */}
+        <Dialog
+          open={openOtpDialog || otpLoading} // Keep open while loading
+          onClose={handleCloseOtpDialog}
+          aria-labelledby="otp-dialog-title"
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle id="otp-dialog-title" sx={{ backgroundColor: colors.primary[400], color: colors.grey[100] }}>
+            OTP Distribution
+          </DialogTitle>
+          <DialogContent sx={{ backgroundColor: colors.primary[400] }}>
+            {otpLoading ? (
+              <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p={5}>
+                <CircularProgress size={60} color="secondary" />
+                <Typography variant="h6" color={colors.grey[100]} mt={2}>
+                  Sending OTPs to all users... This may take a moment.
+                </Typography>
+              </Box>
+            ) : (
+              <Box>
+                {otpResult && (
+                  <Box>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <CheckCircleOutlineIcon sx={{ color: colors.greenAccent[500], fontSize: 40, mr: 2 }} />
+                      <Typography variant="h4" color={colors.greenAccent[500]}>
+                        Distribution Complete
+                      </Typography>
+                    </Box>
+                    <Grid container spacing={3} sx={{ mb: 2 }}>
+                      <Grid item xs={12} sm={4}>
+                        <Card sx={{ backgroundColor: "rgba(134, 141, 251, 0.05)", p: 2, textAlign: "center", border: `1px solid ${colors.primary[500]}` }}>
+                          <Typography variant="subtitle1" color={colors.grey[300]}>Total Users</Typography>
+                          <Typography variant="h3" fontWeight="bold" color={colors.blueAccent[300]}>{otpResult.total}</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Card sx={{ backgroundColor: "rgba(76, 206, 172, 0.05)", p: 2, textAlign: "center", border: `1px solid ${colors.primary[500]}` }}>
+                          <Typography variant="subtitle1" color={colors.grey[300]}>Sent</Typography>
+                          <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>{otpResult.sent}</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Card sx={{ backgroundColor: otpResult.failed > 0 ? "rgba(219, 79, 74, 0.05)" : "rgba(76, 206, 172, 0.05)", p: 2, textAlign: "center", border: `1px solid ${colors.primary[500]}` }}>
+                          <Typography variant="subtitle1" color={colors.grey[300]}>Failed</Typography>
+                          <Typography variant="h3" fontWeight="bold" color={otpResult.failed > 0 ? colors.redAccent[500] : colors.greenAccent[500]}>{otpResult.failed}</Typography>
+                        </Card>
+                      </Grid>
+                    </Grid>
+
+                    {otpResult.errors && otpResult.errors.length > 0 && (
+                      <Box mt={2}>
+                        <Typography variant="h6" color={colors.redAccent[500]} gutterBottom>Errors:</Typography>
+                        <Paper sx={{ p: 2, maxHeight: 150, overflow: 'auto', backgroundColor: colors.primary[500] }}>
+                          {otpResult.errors.map((error, index) => (
+                            <Typography key={index} variant="body2" color={colors.grey[200]} sx={{ mb: 0.5 }}>
+                              <strong>{error.user}:</strong> {error.error}
+                            </Typography>
+                          ))}
+                        </Paper>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {otpError && (
+                  <Box display="flex" alignItems="center" p={2}>
+                    <ErrorOutlineIcon sx={{ color: colors.redAccent[500], fontSize: 40, mr: 2 }} />
+                    <Box>
+                      <Typography variant="h5" color={colors.redAccent[500]}>Distribution Failed</Typography>
+                      <Typography variant="body1" color={colors.grey[100]}>{otpError}</Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ backgroundColor: colors.primary[400] }}>
+            <Button onClick={handleCloseOtpDialog} sx={{ color: colors.grey[100] }} disabled={otpLoading}>
               Close
             </Button>
           </DialogActions>

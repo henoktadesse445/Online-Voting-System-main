@@ -1,4 +1,4 @@
-import { createContext, useState, useMemo } from "react";
+import { createContext, useState, useMemo, useEffect } from "react";
 import { createTheme } from '@mui/material/styles';
 
 export const tokens = (mode) => ({
@@ -18,8 +18,8 @@ export const tokens = (mode) => ({
             100: "#d0d1d5",
             200: "#a1a4ab",
             300: "#727681",
-            400: "#434957",
-            500: "#141b2d",
+            400: "#1F2A40", // Slightly lighter for cards
+            500: "#141b2d", // Main side/header
             600: "#101624",
             700: "#0c101b",
             800: "#080b12",
@@ -74,8 +74,8 @@ export const tokens = (mode) => ({
             100: "#040509",
             200: "#080b12",
             300: "#0c101b",
-            400: "#f2f0f0",
-            500: "#141b2d",
+            400: "#ffffff", // White for cards (pop against light bg)
+            500: "#fcfcfc", // Light Background
             600: "#434957",
             700: "#727681",
             800: "#a1a4ab",
@@ -157,31 +157,56 @@ export const themeSettings = (mode) => {
             }),
         },
         typography: {
-            fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+            fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
             fontSize: 12,
             h1: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
-                fontSize: 32,
+                fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
+                fontSize: 40,
+                fontWeight: 800,
             },
             h2: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
-                fontSize: 20,
+                fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
+                fontSize: 32,
+                fontWeight: 700,
             },
             h3: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
-                fontSize: 18,
+                fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
+                fontSize: 24,
+                fontWeight: 700,
             },
             h4: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
-                fontSize: 14,
+                fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
+                fontSize: 20,
+                fontWeight: 600,
             },
             h5: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
-                fontSize: 12,
+                fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
+                fontSize: 16,
+                fontWeight: 600,
             },
             h6: {
-                fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+                fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 14,
+                fontWeight: 600,
+            }
+        },
+        components: {
+            MuiButton: {
+                styleOverrides: {
+                    root: {
+                        borderRadius: "10px",
+                        textTransform: "none",
+                        fontWeight: 600,
+                    }
+                }
+            },
+            MuiCard: {
+                styleOverrides: {
+                    root: {
+                        borderRadius: "16px",
+                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.1)",
+                    }
+                }
             }
         }
     }
@@ -189,22 +214,31 @@ export const themeSettings = (mode) => {
 
 // context for color mode
 export const ColorModeContext = createContext({
-    toggleColorMode :() =>{
+    toggleColorMode: () => {
 
     }
 });
 
-export const useMode = () =>{
-    const [mode,setMode] = useState("dark");
+export const useMode = () => {
+    const [mode, setMode] = useState(() => localStorage.getItem("theme") || "dark");
     const colorMode = useMemo(
         () => ({
-            toggleColorMode: () => 
-                setMode((prev) => (prev==="light"? "dark" : "light"))
+            toggleColorMode: () =>
+                setMode((prev) => (prev === "light" ? "dark" : "light"))
         }),
         []
     );
 
+    useEffect(() => {
+        localStorage.setItem("theme", mode);
+        if (mode === "light") {
+            document.body.classList.add("light-mode");
+        } else {
+            document.body.classList.remove("light-mode");
+        }
+    }, [mode]);
+
     const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
 
-    return [theme,colorMode];
+    return [theme, colorMode];
 }

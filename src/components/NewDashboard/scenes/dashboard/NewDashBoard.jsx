@@ -4,6 +4,7 @@ import Header from "../../newComponents/Header"
 import { tokens } from "../../theme";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import GroupIcon from "@mui/icons-material/Group";
 import PersonIcon from "@mui/icons-material/Person";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
@@ -14,11 +15,11 @@ import StatBox from "../../newComponents/StatBox";
 import "../../New.css"
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
+import { toast } from 'react-toastify';
 
 const NewDashboard = () => {
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0); // Key to force refresh
     const upcomingElections = [
         { id: '1', name: 'WCU Student President Election', date: '2025-12-01' },
@@ -36,10 +37,60 @@ const NewDashboard = () => {
         setRefreshKey(prev => prev + 1);
     };
 
+    // Function to start new election
+    const handleStartNewElection = async () => {
+        // Single confirmation dialog
+        if (!window.confirm(
+            "⚠️ WARNING: This will DELETE ALL VOTES, CANDIDATES, and RESULTS.\n\n" +
+            "Student lists and admin accounts will be preserved.\n\n" +
+            "Are you sure you want to start a new election?"
+        )) {
+            return;
+        }
+
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser || !currentUser._id) {
+                toast.error("Admin authentication required. Please log in again.");
+                return;
+            }
+
+            const response = await axios.post(`/api/admin/start-new-election`, {
+                adminId: currentUser._id,
+                confirmationCode: 'START_NEW_ELECTION'
+            });
+
+            if (response.data.success) {
+                const summary = response.data.summary;
+                toast.success(
+                    `✅ New Election Started!\n\n` +
+                    `📊 ${summary.votesDeleted} votes cleared\n` +
+                    `👥 ${summary.candidatesDeleted} candidates removed\n` +
+                    `📝 ${summary.resultsDeleted} results cleared\n` +
+                    `🔄 ${summary.votersReset} voters reset`,
+                    { autoClose: 5000 }
+                );
+
+                // Force immediate refresh with a small delay to ensure backend transaction completes
+                setTimeout(() => {
+                    handleRefresh();
+                }, 500);
+            } else {
+                toast.error(response.data.message || "Failed to start new election");
+            }
+        } catch (error) {
+            console.error("Error starting new election:", error);
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                "Failed to start new election. Please try again.";
+            toast.error(errorMessage);
+        }
+    };
+
     // Fetch dashboard statistics
     useEffect(() => {
         setLoading(true);
-        axios.get(`${BASE_URL}/getDashboardData`)
+        axios.get(`${BASE_URL}/getDashboardData?t=${new Date().getTime()}`)
             .then((response) => {
                 const cardData = response.data.DashboardData;
                 setData({
@@ -50,8 +101,7 @@ const NewDashboard = () => {
                 setLoading(false);
             })
             .catch(err => {
-                console.error("Error fetching data: ", err)
-                setError(err);
+                console.error("Error fetching data: ", err);
                 setLoading(false);
             });
     }, [refreshKey]);
@@ -64,9 +114,9 @@ const NewDashboard = () => {
 
         return () => clearInterval(interval);
     }, []);
-    // Fetch candidates
+    // Fetch candidates with cache-busting
     useEffect(() => {
-        axios.get(`${BASE_URL}/getCandidate`)
+        axios.get(`${BASE_URL}/getCandidate?t=${new Date().getTime()}`)
             .then((response) => {
                 // Sort candidates by votes in descending order
                 const sortedCandidates = response.data.candidate.sort((a, b) => {
@@ -75,8 +125,7 @@ const NewDashboard = () => {
                 setCandidates(sortedCandidates);
             })
             .catch(err => {
-                console.error("Error fetching data: ", err)
-                setError(err);
+                console.error("Error fetching candidates: ", err);
             });
     }, [refreshKey]);
     if (loading) {
@@ -90,7 +139,24 @@ const NewDashboard = () => {
                 <Box display="flex" mb="10px" justifyContent="space-between" alignItems="center" >
                     <Header title="ADMIN DASHBOARD" subtitle="Welcome Administrator" />
 
-                    <Box>
+                    <Box display="flex" gap={2}>
+                        <Button
+                            onClick={handleStartNewElection}
+                            startIcon={<PlayCircleOutlineIcon />}
+                            variant="contained"
+                            sx={{
+                                backgroundColor: colors.blueAccent[600],
+                                color: colors.grey[100],
+                                fontSize: "14px",
+                                fontWeight: "bold",
+                                padding: "10px 20px",
+                                '&:hover': {
+                                    backgroundColor: colors.blueAccent[700],
+                                }
+                            }}
+                        >
+                            Start New Election
+                        </Button>
                         <Button
                             onClick={handleRefresh}
                             startIcon={<RefreshIcon />}
@@ -115,14 +181,13 @@ const NewDashboard = () => {
                 <Box
                     display="grid"
                     gridTemplateColumns="repeat(12, 1fr)"
-                    gridAutoRows="140px"
-                    gap="20px"
+                    gridAutoRows="160px"
+                    gap="25px"
                 >
 
                     {/* ROW 1 */}
                     <Box
-                        gridColumn="span 3"
-                        backgroundColor={colors.primary[400]}
+                        gridColumn="span 4"
                         display="flex"
                         alignItems="center"
                         justifyContent="center"
@@ -132,14 +197,13 @@ const NewDashboard = () => {
                             subtitle="Total Voters"
                             icon={
                                 <GroupIcon
-                                    sx={{ color: colors.greenAccent[600], fontSize: "35px" }}
+                                    sx={{ color: colors.greenAccent[500], fontSize: "35px" }}
                                 />
                             }
                         />
                     </Box>
                     <Box
-                        gridColumn="span 3"
-                        backgroundColor={colors.primary[400]}
+                        gridColumn="span 4"
                         display="flex"
                         alignItems="center"
                         justifyContent="center"
@@ -149,14 +213,13 @@ const NewDashboard = () => {
                             subtitle="Total Candidates"
                             icon={
                                 <PersonIcon
-                                    sx={{ color: colors.greenAccent[600], fontSize: "35px" }}
+                                    sx={{ color: colors.greenAccent[500], fontSize: "35px" }}
                                 />
                             }
                         />
                     </Box>
                     <Box
-                        gridColumn="span 3"
-                        backgroundColor={colors.primary[400]}
+                        gridColumn="span 4"
                         display="flex"
                         alignItems="center"
                         justifyContent="center"
@@ -166,7 +229,7 @@ const NewDashboard = () => {
                             subtitle="Total Voters who have Voted"
                             icon={
                                 <HowToVoteIcon
-                                    sx={{ color: colors.greenAccent[600], fontSize: "35px" }}
+                                    sx={{ color: colors.greenAccent[500], fontSize: "35px" }}
                                 />
                             }
                         />
@@ -176,6 +239,8 @@ const NewDashboard = () => {
                         gridColumn="span 8"
                         gridRow="span 2"
                         backgroundColor={colors.primary[400]}
+                        borderRadius="16px"
+                        boxShadow="0 4px 20px rgba(0,0,0,0.1)"
                     >
                         <Box
                             mt="25px"
@@ -187,10 +252,10 @@ const NewDashboard = () => {
                             <Box>
                                 <Typography
                                     variant="h4"
-                                    fontWeight="600"
+                                    fontWeight="700"
                                     color={colors.grey[100]}
                                 >
-                                    Election Result
+                                    Election Result Real-time
                                 </Typography>
 
                             </Box>
@@ -211,17 +276,18 @@ const NewDashboard = () => {
                         gridColumn="span 4"
                         gridRow="span 2"
                         backgroundColor={colors.primary[400]}
+                        borderRadius="16px"
+                        boxShadow="0 4px 20px rgba(0,0,0,0.1)"
                         overflow="auto"
                     >
                         <Box
                             display="flex"
                             justifyContent="space-between"
                             alignItems="center"
-                            borderBottom={`4px solid ${colors.primary[500]}`}
-                            colors={colors.grey[100]}
+                            borderBottom={`2px solid ${colors.primary[500]}`}
                             p="15px"
                         >
-                            <Typography color={colors.grey[100]} variant="h4" fontWeight="600">
+                            <Typography color={colors.grey[100]} variant="h4" fontWeight="700">
                                 Current Leaders
                             </Typography>
                         </Box>
@@ -231,8 +297,14 @@ const NewDashboard = () => {
                                 display="flex"
                                 justifyContent="space-between"
                                 alignItems="center"
-                                borderBottom={`4px solid ${colors.primary[500]}`}
+                                borderBottom={`1px solid ${colors.primary[500]}`}
                                 p="15px"
+                                sx={{
+                                    transition: "background 0.3s ease",
+                                    "&:hover": {
+                                        backgroundColor: "rgba(104, 112, 250, 0.05)",
+                                    }
+                                }}
                             >
                                 <Box>
                                     <Typography
@@ -242,15 +314,17 @@ const NewDashboard = () => {
                                     >
                                         {candidate.name}
                                     </Typography>
-                                    <Typography color={colors.grey[100]}>
-                                        {candidate.party}
+                                    <Typography color={colors.grey[100]} variant="body2">
+                                        {candidate.party || "Independent"}
                                     </Typography>
                                 </Box>
-                                <Box 
+                                <Box
                                     backgroundColor={colors.greenAccent[500]}
-                                    p="5px 10px"
-                                    borderRadius="4px"
-                                    color={colors.grey[100]}
+                                    p="5px 12px"
+                                    borderRadius="20px"
+                                    color={colors.primary[500]}
+                                    fontWeight="bold"
+                                    fontSize="12px"
                                 >
                                     {candidate.votes || 0} votes
                                 </Box>

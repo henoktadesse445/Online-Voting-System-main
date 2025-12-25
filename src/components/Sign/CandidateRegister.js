@@ -8,7 +8,7 @@ import axios from "axios"
 import { BASE_URL } from "../../helper";
 import { useNavigate, Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import Nav_bar from "../Navbar/Navbar";
+import UserNavbar from "../Navbar/UserNavbar";
 
 const CandidateRegister = () => {
     const [loading, setLoading] = useState(false);
@@ -158,94 +158,132 @@ const CandidateRegister = () => {
 
 
     return (
-        <div >
-            <Nav_bar />
-            <section className="Candidatesignup">
-                <div className="FormTitle">
-                    <h2>Register as Candidate</h2>
-                </div>
+        <div>
+            <UserNavbar />
+            <section className="candidate-register-section">
+                <div className="candidate-register-wrapper">
+                    <div className="candidate-register-card">
+                        <div className="form-header">
+                            <h2>Register as Candidate</h2>
+                            <p className="subtitle">Submit your application to become a candidate</p>
+                        </div>
 
-                {!isLoggedIn && (
-                    <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#fff3cd', margin: '20px auto', maxWidth: '600px', borderRadius: '5px' }}>
-                        <p style={{ margin: 0, color: '#856404' }}>
-                            <strong>Please login first to register as a candidate.</strong>
-                        </p>
-                        <Link to="/Login" style={{ color: '#2196F3', textDecoration: 'none' }}>Go to Login Page</Link>
-                    </div>
-                )}
+                        {!isLoggedIn && (
+                            <div className="status-box warning">
+                                <p><strong>Please login first to register as a candidate.</strong></p>
+                                <Link to="/Login" className="action-link">Go to Login Page</Link>
+                            </div>
+                        )}
 
-                <div className="container">
-                    <div className="signup-content">
-                        <div className="signup-form">
+                        <div className="form-body">
                             <ToastContainer />
+
                             {submitSuccess && (
-                                <div style={{ padding: '12px', marginBottom: '16px', backgroundColor: '#e9f7ef', border: '1px solid #28a745', borderRadius: '5px', color: '#1e7e34' }}>
-                                    <h4 style={{ margin: 0, marginBottom: '6px', fontSize: '16px' }}>Request Successful</h4>
-                                    <p style={{ margin: 0, fontSize: '14px' }}>{successText}</p>
+                                <div className="status-box success">
+                                    <h4>Request Successful</h4>
+                                    <p>{successText}</p>
                                 </div>
                             )}
 
-                            <form method="POST" enctype="multipart/form-data" className="register-form" id="register-form">
+                            <form method="POST" encType="multipart/form-data" className="register-form">
                                 {isLoggedIn && (
                                     <>
-                                        <div style={{ padding: '10px', marginBottom: '20px', backgroundColor: '#d1ecf1', borderRadius: '5px', fontSize: '14px', color: '#0c5460' }}>
+                                        <div className="info-box info">
                                             Your registration will be reviewed by an admin. You will be notified once approved.
                                         </div>
+
                                         {userInfo && (
-                                            <div style={{ padding: '15px', marginBottom: '20px', backgroundColor: '#f5f5f5', borderRadius: '5px', border: '1px solid #ddd' }}>
-                                                <h4 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Your Registration Information:</h4>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', fontSize: '14px' }}>
-                                                    <div><strong>Name:</strong> {userInfo.name || 'N/A'}</div>
-                                                    <div><strong>Email:</strong> {userInfo.email || 'N/A'}</div>
-                                                    <div><strong>Student ID:</strong> {userInfo.voterId || 'N/A'}</div>
-                                                    <div><strong>Department:</strong> {userInfo.department || 'N/A'}</div>
-                                                    {userInfo.college && <div><strong>College:</strong> {userInfo.college}</div>}
+                                            <div className="user-profile-summary">
+                                                <h4>Your Profile</h4>
+                                                <div className="profile-grid">
+                                                    <div className="profile-item">
+                                                        <span className="label">Name</span>
+                                                        <span className="value">{userInfo.name || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="profile-item">
+                                                        <span className="label">Email</span>
+                                                        <span className="value">{userInfo.email || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="profile-item">
+                                                        <span className="label">Student ID</span>
+                                                        <span className="value">{userInfo.voterId || 'N/A'}</span>
+                                                    </div>
+                                                    <div className="profile-item">
+                                                        <span className="label">Department</span>
+                                                        <span className="value">{userInfo.department || 'N/A'}</span>
+                                                    </div>
+                                                    {userInfo.college && (
+                                                        <div className="profile-item">
+                                                            <span className="label">College</span>
+                                                            <span className="value">{userInfo.college}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#666' }}>
-                                                    This information will be used for your candidate profile.
-                                                </p>
+                                                <p className="note">This information will be used for your candidate profile.</p>
                                             </div>
                                         )}
                                     </>
                                 )}
-                                <div style={{ padding: '15px', marginBottom: '20px', backgroundColor: '#e3f2fd', borderRadius: '5px', border: '1px solid #2196F3' }}>
-                                    <p style={{ margin: 0, color: '#1565c0', fontSize: '14px' }}>
-                                        <strong>Position Assignment:</strong> Positions will be automatically assigned after the election ends based on the total number of votes you receive. The candidate with the highest votes becomes President, 2nd highest becomes Vice President, and so on.
+
+                                <div className="info-box primary">
+                                    <p>
+                                        <strong>Position Assignment:</strong> Positions will be automatically assigned after the election ends based on the total number of votes you receive.
                                     </p>
                                 </div>
-                                {/* CGPA field removed - no longer required */}
-                                <div className="form-group">
-                                    <label for="bio"></label>
-                                    <textarea name="bio" id="bio" value={formData.bio} onChange={handleChange} placeholder="Candidate Bio (brief description)" rows="3" style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }}></textarea>
-                                    <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>(Optional) Provide a brief description about yourself</small>
+
+                                <div className="form-field">
+                                    <label htmlFor="bio">Candidate Bio</label>
+                                    <textarea
+                                        name="bio"
+                                        id="bio"
+                                        value={formData.bio}
+                                        onChange={handleChange}
+                                        placeholder="Tell us about yourself..."
+                                        rows="4"
+                                    ></textarea>
+                                    <small>(Optional) A brief description that will appear on your public profile</small>
                                 </div>
 
-                                <div className="form-group">
-                                    <label for="image"></label>
-                                    <input type="file" name="image" id="image" onChange={handleFileChange} accept="image/*" />
-                                    <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>(Optional) Upload your profile photo (Image file)</small>
-                                </div>
-                                <div className="form-group">
-                                    <label for="symbol"></label>
-                                    <input type="file" name="symbol" id="symbol" onChange={handleFileChange} accept="image/*,.pdf,.doc,.docx" />
-                                    <small style={{ display: 'block', marginTop: '5px', color: '#666', fontSize: '12px' }}>(Optional) Upload your proposal document (PDF, DOC, DOCX, or Image)</small>
-                                </div>
-                                <div className="form-group">
-                                    <label for="authenticatedDocument"></label>
-                                    <input type="file" name="authenticatedDocument" id="authenticatedDocument" onChange={handleFileChange} accept="image/*,.pdf" required />
-                                    <small style={{ display: 'block', marginTop: '5px', color: '#d32f2f', fontSize: '12px' }}>(Required) Upload your verified document proving you are a class representative (PDF or Image)</small>
+                                <div className="form-row">
+                                    <div className="form-field">
+                                        <label htmlFor="image">Profile Photo</label>
+                                        <div className="file-input-wrapper">
+                                            <input type="file" name="image" id="image" onChange={handleFileChange} accept="image/*" />
+                                        </div>
+                                        <small>(Optional) Upload a clear photo of yourself</small>
+                                    </div>
+
+                                    <div className="form-field">
+                                        <label htmlFor="symbol">Proposal Document</label>
+                                        <div className="file-input-wrapper">
+                                            <input type="file" name="symbol" id="symbol" onChange={handleFileChange} accept="image/*,.pdf,.doc,.docx" />
+                                        </div>
+                                        <small>(Optional) Your manifesto or proposal</small>
+                                    </div>
                                 </div>
 
-                                <div className="form-group form-button">
-                                    {/* <input type="submit" name="signup" id="signup" className="form-submit" value="Create Candidate" /> */}
-                                    <button onClick={handleSubmit} disabled={loading || !isLoggedIn} className="form-submit">{loading ? <div className="spinner"></div> : 'Submit Application'}</button>
+                                <div className="form-field required-field">
+                                    <label htmlFor="authenticatedDocument">Authenticated Document <span className="required">*</span></label>
+                                    <div className="file-input-wrapper">
+                                        <input type="file" name="authenticatedDocument" id="authenticatedDocument" onChange={handleFileChange} accept="image/*,.pdf" required />
+                                    </div>
+                                    <small className="error-text">Upload a verified document proving you are a class representative</small>
+                                </div>
+
+                                <div className="form-actions">
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={loading || !isLoggedIn}
+                                        className="btn-submit"
+                                    >
+                                        {loading ? <div className="spinner-small"></div> : 'Submit Application'}
+                                    </button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
             </section>
-
         </div>
     )
 }
