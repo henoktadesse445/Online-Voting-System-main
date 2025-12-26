@@ -39,7 +39,13 @@ const AdminLogin = () => {
                     username: username,
                     role: "admin"
                 };
+
+                console.log("💾 Saving admin data to localStorage:", adminData);
                 localStorage.setItem('currentUser', JSON.stringify(adminData));
+
+                // Verify it was saved
+                const saved = localStorage.getItem('currentUser');
+                console.log("✅ Verified localStorage save:", saved);
 
                 loginSuccess();
                 setTimeout(() => {

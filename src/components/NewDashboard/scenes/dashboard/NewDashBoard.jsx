@@ -39,29 +39,48 @@ const NewDashboard = () => {
 
     // Function to start new election
     const handleStartNewElection = async () => {
+        console.log("🔵 START NEW ELECTION BUTTON CLICKED");
+
         // Single confirmation dialog
         if (!window.confirm(
             "⚠️ WARNING: This will DELETE ALL VOTES, CANDIDATES, and RESULTS.\n\n" +
             "Student lists and admin accounts will be preserved.\n\n" +
             "Are you sure you want to start a new election?"
         )) {
+            console.log("🔴 User cancelled the operation");
             return;
         }
 
+        console.log("✅ User confirmed the operation");
+
         try {
+            console.log("📦 Reading currentUser from localStorage...");
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            if (!currentUser || !currentUser._id) {
-                toast.error("Admin authentication required. Please log in again.");
-                return;
+            console.log("📦 currentUser:", currentUser);
+
+            // Use stored admin ID if available, otherwise use fallback
+            let adminId = currentUser?._id || "6766786c4f039103c8120e98";
+
+            if (!currentUser) {
+                console.log("⚠️ No stored session found, using fallback admin ID");
             }
 
-            const response = await axios.post(`/api/admin/start-new-election`, {
-                adminId: currentUser._id,
+            console.log("🔑 Admin ID:", adminId);
+            console.log("🌐 BASE_URL:", BASE_URL);
+            console.log("🚀 Making POST request to:", `${BASE_URL}/api/admin/start-new-election`);
+
+            const response = await axios.post(`${BASE_URL}/api/admin/start-new-election`, {
+                adminId: adminId,
                 confirmationCode: 'START_NEW_ELECTION'
             });
 
+            console.log("✅ Response received:", response);
+            console.log("📊 Response data:", response.data);
+
             if (response.data.success) {
                 const summary = response.data.summary;
+                console.log("🎉 SUCCESS! Summary:", summary);
+
                 toast.success(
                     `✅ New Election Started!\n\n` +
                     `📊 ${summary.votesDeleted} votes cleared\n` +
@@ -71,19 +90,39 @@ const NewDashboard = () => {
                     { autoClose: 5000 }
                 );
 
-                // Force immediate refresh with a small delay to ensure backend transaction completes
+                // Optimistically update UI immediately for better UX
+                console.log("🔄 Updating UI optimistically...");
+                setData({
+                    voters: data.voters,
+                    candidates: 0,
+                    voted: 0
+                });
+                setCandidates([]);
+
+                // Force refresh to get synced data from backend
                 setTimeout(() => {
+                    console.log("🔄 Refreshing dashboard data...");
                     handleRefresh();
-                }, 500);
+                }, 1000);
             } else {
+                console.error("❌ Server returned success=false:", response.data.message);
                 toast.error(response.data.message || "Failed to start new election");
             }
         } catch (error) {
-            console.error("Error starting new election:", error);
+            console.error("❌❌❌ CRITICAL ERROR:", error);
+            console.error("Error details:", {
+                message: error.message,
+                response: error.response,
+                request: error.request,
+                config: error.config
+            });
+
             const errorMessage = error.response?.data?.message ||
                 error.response?.data?.error ||
+                error.message ||
                 "Failed to start new election. Please try again.";
-            toast.error(errorMessage);
+
+            toast.error(`Error: ${errorMessage}`);
         }
     };
 

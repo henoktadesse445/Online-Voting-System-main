@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import "../../../Sign/SignUtils/CSS/Sign.css";
-import "../../../Sign/SignUtils/CSS/style.css.map"
+import "./EditProfile.css";
 import UserNavbar from "../../../Navbar/UserNavbar";
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
@@ -203,15 +202,9 @@ const EditProfile = () => {
         return (
             <div>
                 <UserNavbar />
-                <section className="signup">
-                    <div className="container">
-                        <div className="signup-content">
-                            <div className="signup-form">
-                                <h2 className="form-title">Loading...</h2>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                <div className="loading-container">
+                    <h2>Loading Profile...</h2>
+                </div>
             </div>
         );
     }
@@ -219,137 +212,141 @@ const EditProfile = () => {
     return (
         <div>
             <UserNavbar />
-            <section className="signup">
-                <div className="container">
-                    <div className="signup-content">
-                        <div className="signup-form">
-                            <h2 className="form-title">
-                                {userRole === 'candidate' ? 'Edit Your Candidate Profile' : 'Edit Your Details'}
-                            </h2>
-                            <ToastContainer />
-                            {userRole === 'candidate' && (
-                                <div style={{
-                                    padding: '10px',
-                                    marginBottom: '20px',
-                                    backgroundColor: '#e3f2fd',
-                                    border: '1px solid #2196F3',
-                                    borderRadius: '4px',
-                                    color: '#1565c0',
-                                    fontSize: '14px'
-                                }}>
-                                    <strong>Candidate Mode:</strong> You can edit your candidate information including party/department, bio, and CGPA.
-                                </div>
-                            )}
-                            <form onSubmit={handleSubmit} className="register-form" id="register-form">
-                                <div className="form-group">
-                                    <label htmlFor="name"></label>
+            <div className="edit-profile-wrapper">
+                <div className="edit-profile-card">
+                    <div className="edit-profile-header">
+                        <h2>{userRole === 'candidate' ? 'Edit Candidate Profile' : 'Edit Personal Details'}</h2>
+                        <p>Update your information and manage your account</p>
+                    </div>
+
+                    <ToastContainer position="top-right" autoClose={3000} />
+
+                    <form onSubmit={handleSubmit} className="edit-profile-form">
+
+                        {userRole === 'candidate' && (
+                            <div className="info-box info">
+                                <strong>Candidate Mode Enabled</strong><br />
+                                You can edit your candidate information including party/department, bio, and CGPA securely here.
+                            </div>
+                        )}
+
+                        <div className="form-section">
+                            <h3 className="section-title">Personal Information</h3>
+                            <div className="edit-profile-grid">
+                                <div className="edit-profile-group">
+                                    <label htmlFor="name">Full Name</label>
                                     <input
                                         type="text"
                                         name="name"
                                         id="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        placeholder="Your Name"
+                                        placeholder="Enter your full name"
                                         required
                                     />
                                 </div>
-                                <div className="form-group">
-                                    <label htmlFor="voterId"></label>
+                                <div className="edit-profile-group">
+                                    <label htmlFor="voterId">Student ID</label>
                                     <input
                                         type="text"
                                         name="voterId"
                                         id="voterId"
                                         value={formData.voterId}
                                         onChange={handleChange}
-                                        placeholder="Your Student ID (e.g., WCU1234567)"
+                                        placeholder="e.g., WCU1234567"
                                         required
                                     />
                                 </div>
-                                <div className="form-group">
-                                    <label htmlFor="email"></label>
+                                <div className="edit-profile-group full-width">
+                                    <label htmlFor="email">Email Address</label>
                                     <input
                                         type="email"
                                         name="email"
                                         id="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="Your Gmail Address (e.g., yourname@gmail.com)"
+                                        placeholder="yourname@gmail.com"
                                         required
                                     />
                                 </div>
-                                {userRole === 'candidate' && (
-                                    <>
-                                        {userData && userData.position && (
-                                            <div style={{ padding: '10px', marginBottom: '20px', backgroundColor: '#e8f5e9', borderRadius: '4px', border: '1px solid #4caf50' }}>
-                                                <strong>Your Position:</strong> {userData.position} <br />
-                                                <small style={{ color: '#666', fontSize: '12px' }}>(Assigned after election based on vote totals)</small>
-                                            </div>
-                                        )}
-                                        {userRole === 'candidate' && (!userData || !userData.position) && (
-                                            <div style={{ padding: '10px', marginBottom: '20px', backgroundColor: '#fff3cd', borderRadius: '4px', border: '1px solid #ffc107' }}>
-                                                <strong>Position:</strong> Will be automatically assigned after the election ends based on your total votes. Highest votes = President, 2nd = Vice President, etc.
-                                            </div>
-                                        )}
-                                        <div className="form-group">
-                                            <label htmlFor="party"></label>
-                                            <input
-                                                type="text"
-                                                name="party"
-                                                id="party"
-                                                value={formData.party}
-                                                onChange={handleChange}
-                                                placeholder="Department/Party (e.g., Computer Science)"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="bio"></label>
-                                            <textarea
-                                                name="bio"
-                                                id="bio"
-                                                value={formData.bio}
-                                                onChange={handleChange}
-                                                placeholder="Your Candidate Bio/Manifesto"
-                                                rows="4"
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '10px',
-                                                    border: '1px solid #ccc',
-                                                    borderRadius: '4px',
-                                                    fontSize: '14px',
-                                                    fontFamily: 'inherit'
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="cgpa"></label>
-                                            <input
-                                                type="number"
-                                                name="cgpa"
-                                                id="cgpa"
-                                                value={formData.cgpa}
-                                                onChange={handleChange}
-                                                placeholder="CGPA (e.g., 3.5)"
-                                                min="0"
-                                                max="4.0"
-                                                step="0.01"
-                                            />
-                                        </div>
-                                    </>
+                            </div>
+                        </div>
+
+                        {userRole === 'candidate' && (
+                            <div className="edit-profile-section">
+                                <h3 className="section-title">Candidate Details</h3>
+
+                                {userData && userData.position && (
+                                    <div className="info-box success">
+                                        <strong>Current Position:</strong> {userData.position}<br />
+                                        <span>(Assigned pending election results)</span>
+                                    </div>
                                 )}
-                                <div className="form-group">
-                                    <label htmlFor="pass"></label>
+
+                                {(!userData || !userData.position) && (
+                                    <div className="info-box warning">
+                                        <strong>Position Pending:</strong> Will be assigned based on election results.
+                                    </div>
+                                )}
+
+                                <div className="edit-profile-grid">
+                                    <div className="edit-profile-group">
+                                        <label htmlFor="party">Department / Party</label>
+                                        <input
+                                            type="text"
+                                            name="party"
+                                            id="party"
+                                            value={formData.party}
+                                            onChange={handleChange}
+                                            placeholder="e.g., Computer Science"
+                                        />
+                                    </div>
+                                    <div className="edit-profile-group">
+                                        <label htmlFor="cgpa">CGPA</label>
+                                        <input
+                                            type="number"
+                                            name="cgpa"
+                                            id="cgpa"
+                                            value={formData.cgpa}
+                                            onChange={handleChange}
+                                            placeholder="e.g., 3.5"
+                                            min="0"
+                                            max="4.0"
+                                            step="0.01"
+                                        />
+                                    </div>
+                                    <div className="edit-profile-group full-width">
+                                        <label htmlFor="bio">Manifesto / Bio</label>
+                                        <textarea
+                                            name="bio"
+                                            id="bio"
+                                            value={formData.bio}
+                                            onChange={handleChange}
+                                            placeholder="Tell voters about yourself and your goals..."
+                                            rows="4"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="edit-profile-section">
+                            <h3 className="section-title">Security</h3>
+                            <div className="edit-profile-grid">
+                                <div className="edit-profile-group">
+                                    <label htmlFor="pass">New Password</label>
                                     <input
                                         type="password"
                                         name="pass"
                                         id="pass"
                                         value={formData.pass}
                                         onChange={handleChange}
-                                        placeholder="New Password (leave blank to keep current)"
+                                        placeholder="Leave blank to keep current"
                                         autoComplete="new-password"
                                     />
                                 </div>
-                                <div className="form-group">
-                                    <label htmlFor="re_pass"></label>
+                                <div className="edit-profile-group">
+                                    <label htmlFor="re_pass">Confirm Password</label>
                                     <input
                                         type="password"
                                         name="re_pass"
@@ -360,26 +357,21 @@ const EditProfile = () => {
                                         autoComplete="new-password"
                                     />
                                 </div>
-                                <div className="form-group form-button">
-                                    <button
-                                        type="submit"
-                                        className="form-submit"
-                                        disabled={loading}
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px',
-                                            cursor: loading ? 'not-allowed' : 'pointer',
-                                            opacity: loading ? 0.7 : 1
-                                        }}
-                                    >
-                                        {loading ? 'Saving...' : 'Save Changes'}
-                                    </button>
-                                </div>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+
+                        <div className="edit-profile-actions">
+                            <button
+                                type="submit"
+                                className="btn-save"
+                                disabled={loading}
+                            >
+                                {loading ? 'Saving Changes...' : 'Save & Update Profile'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </section>
+            </div>
         </div>
     )
 }

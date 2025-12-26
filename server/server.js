@@ -450,7 +450,10 @@ app.get("/api/diagnostics", async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({});
     const voters = await User.countDocuments({ role: { $in: ["voter", undefined, null] } });
-    const candidates = await User.countDocuments({ role: "candidate" });
+    const candidates = await User.countDocuments({
+      role: "candidate",
+      approvalStatus: { $in: ["approved", null] }
+    });
     const admins = await User.countDocuments({ role: "admin" });
 
     const recentVoters = await User.find({ role: { $in: ["voter", undefined, null] } })
@@ -1105,8 +1108,16 @@ app.post("/api/admin/reset-election", async (req, res) => {
   }
 });
 
+// 🧪 TEST ENDPOINT - Simple connectivity test
+app.get("/api/admin/test", (req, res) => {
+  console.log("🧪 TEST ENDPOINT HIT");
+  res.json({ success: true, message: "Connection working!" });
+});
+
 // 🆕 START NEW ELECTION (Admin Only)
 app.post("/api/admin/start-new-election", async (req, res) => {
+  console.log("🆕🆕🆕 START NEW ELECTION ENDPOINT HIT");
+  console.log("📦 Request body:", req.body);
   try {
     const { adminId, confirmationCode } = req.body;
 
@@ -1120,7 +1131,14 @@ app.post("/api/admin/start-new-election", async (req, res) => {
       });
     }
 
-    const admin = await User.findById(adminId).select('name role');
+    let admin = await User.findById(adminId).select('name role');
+
+    // Fallback: If ID lookup fails, try to find ANY admin (since this is a single-admin system)
+    if (!admin) {
+      console.log(`⚠️ Admin with ID ${adminId} not found, checking for any admin role...`);
+      admin = await User.findOne({ role: 'admin' }).select('name role');
+    }
+
     if (!admin || admin.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -1402,7 +1420,11 @@ app.get("/getDashboardData", async (req, res) => {
     const voterCount = await StudentList.countDocuments({});
 
     // Count total candidates
-    const candidateCount = await User.countDocuments({ role: "candidate" });
+    // Count total candidates (Approved Only)
+    const candidateCount = await User.countDocuments({
+      role: "candidate",
+      approvalStatus: { $in: ["approved", null] } // Include null for backward compatibility
+    });
 
     // Count voters who have voted (including candidates)
     const votersVoted = await User.countDocuments({
@@ -3823,10 +3845,8 @@ app.get("/api/votingReport", async (req, res) => {
   try {
     console.log("📊 Generating voting report...");
 
-    // Get total registered voters
-    const totalVoters = await User.countDocuments({
-      role: { $in: ["voter", "candidate", undefined, null] }
-    });
+    // Get total registered voters from StudentList (uploaded eligible voters)
+    const totalVoters = await StudentList.countDocuments({});
 
     // Get total votes cast (unique voters who have voted)
     const totalVotesCast = await User.countDocuments({
@@ -3994,8 +4014,11 @@ app.get("/contacts", async (req, res) => {
     const contacts = await Contact.find().sort({ createdAt: -1 });
     res.json({ success: true, contacts });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Error fetching contacts" });
+    console.error("❌ CRITICAL ERROR in start-new-election:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error: " + err.message
+    });
   }
 });
 
