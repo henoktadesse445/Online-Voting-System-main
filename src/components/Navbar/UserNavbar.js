@@ -90,13 +90,6 @@ function UserNavbar() {
             >
               My Account
             </Nav.Link>
-
-            <Nav.Link
-              className="Nav-items"
-              href="/"
-            >
-              About System
-            </Nav.Link>
           </Nav>
 
           <Nav className="ml-auto">
@@ -115,12 +108,12 @@ function UserNavbar() {
               {isDark ? <FaMoon /> : <FaSun />}
             </Button>
             <Button
-              variant="outline-light"
+              variant={isDark ? 'outline-light' : 'outline-primary'}
               onClick={handleLogout}
               style={{
                 marginLeft: '10px',
-                borderColor: '#fff',
-                color: '#fff'
+                borderRadius: '0.5rem',
+                fontWeight: '600'
               }}
             >
               Logout

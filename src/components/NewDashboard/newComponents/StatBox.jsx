@@ -10,15 +10,19 @@ const StatBox = ({ title, subtitle, icon, progress, increase }) => {
   return (
     <Box
       width="100%"
-      p="20px"
+      p="24px" // Updated to 24px (3 spacing units)
       sx={{
         backgroundColor: colors.primary[400],
         borderRadius: "16px",
-        boxShadow: "0 4px 20px 0 rgba(0,0,0,0.1)",
+        boxShadow: theme.palette.mode === "dark"
+          ? "0 4px 20px rgba(0, 0, 0, 0.3)"
+          : "0 4px 20px rgba(0, 0, 0, 0.08)",
         transition: "transform 0.3s ease, box-shadow 0.3s ease",
         "&:hover": {
-          transform: "translateY(-5px)",
-          boxShadow: `0 8px 30px 0 ${colors.primary[500]}`,
+          transform: "translateY(-4px)",
+          boxShadow: theme.palette.mode === "dark"
+            ? "0 8px 32px rgba(0, 0, 0, 0.4)"
+            : "0 8px 32px rgba(0, 0, 0, 0.12)",
         }
       }}
     >
@@ -27,7 +31,7 @@ const StatBox = ({ title, subtitle, icon, progress, increase }) => {
           <Typography
             variant="h3"
             fontWeight="900"
-            sx={{ color: colors.grey[100], mb: "5px" }}
+            sx={{ color: colors.grey[100], mb: "8px" }} // Updated margin
           >
             <CountUp end={title} duration={3.5} />
           </Typography>

@@ -1,66 +1,66 @@
-/* EditProfile.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+/* EditProfile.css - Using Global Design Tokens */
 
 .edit-profile-wrapper {
-    background-color: #f4f7f6;
+    background-color: var(--bg-primary);
     min-height: 100vh;
-    padding: 40px 20px;
-    font-family: 'Poppins', sans-serif;
+    padding: var(--space-xl) var(--space-lg);
+    font-family: var(--font-primary);
     display: flex;
     justify-content: center;
     align-items: flex-start;
+    transition: background-color var(--transition-slow);
 }
 
 .edit-profile-card {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    background: var(--bg-surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
     width: 100%;
     max-width: 800px;
     overflow: hidden;
-    margin-top: 20px;
+    margin-top: var(--space-lg);
 }
 
 .edit-profile-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 30px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    padding: var(--space-xl);
     color: white;
     text-align: center;
 }
 
 .edit-profile-header h2 {
     margin: 0;
-    font-size: 24px;
-    font-weight: 600;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
 }
 
 .edit-profile-header p {
-    margin: 10px 0 0;
+    margin: var(--space-sm) 0 0;
     opacity: 0.9;
-    font-size: 14px;
+    font-size: var(--font-size-base);
 }
 
 .edit-profile-form {
-    padding: 40px;
+    padding: var(--space-xl);
 }
 
 .edit-profile-section {
-    margin-bottom: 30px;
+    margin-bottom: var(--space-xl);
 }
 
 .section-title {
-    font-size: 18px;
-    color: #333;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-    font-weight: 500;
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm);
+    border-bottom: 2px solid var(--border-color);
+    font-weight: var(--font-weight-medium);
 }
 
 .edit-profile-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: var(--space-lg);
 }
 
 @media (max-width: 768px) {
@@ -70,34 +70,35 @@
 }
 
 .edit-profile-group {
-    margin-bottom: 20px;
+    margin-bottom: var(--space-lg);
     display: flex;
     flex-direction: column;
 }
 
 .edit-profile-group label {
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 8px;
-    font-weight: 500;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 .edit-profile-group input,
 .edit-profile-group textarea {
-    padding: 12px 15px;
-    border: 1px solid #e1e1e1;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    background-color: #f9f9f9;
+    padding: 12px var(--space-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    transition: all var(--transition-base);
+    background-color: var(--input-bg);
+    color: var(--text-primary);
     font-family: inherit;
 }
 
 .edit-profile-group input:focus,
 .edit-profile-group textarea:focus {
-    border-color: #764ba2;
-    background-color: #fff;
-    box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+    border-color: var(--color-primary);
+    background-color: var(--bg-surface);
+    box-shadow: 0 0 0 3px var(--button-shadow);
     outline: none;
 }
 
@@ -111,60 +112,61 @@
 }
 
 .info-box {
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin-bottom: 25px;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-lg);
     border-left: 4px solid;
-    line-height: 1.5;
+    line-height: var(--line-height-relaxed);
 }
 
 .info-box.info {
-    background-color: #e3f2fd;
-    border-color: #2196F3;
-    color: #0d47a1;
+    background-color: rgba(104, 112, 250, 0.1);
+    border-color: var(--color-primary);
+    color: var(--text-primary);
 }
 
 .info-box.success {
-    background-color: #e8f5e9;
-    border-color: #4caf50;
-    color: #1b5e20;
+    background-color: rgba(76, 206, 172, 0.1);
+    border-color: var(--color-success);
+    color: var(--text-primary);
 }
 
 .info-box.warning {
-    background-color: #fff3cd;
-    border-color: #ffc107;
-    color: #856404;
+    background-color: rgba(243, 156, 18, 0.1);
+    border-color: var(--color-warning);
+    color: var(--text-primary);
 }
 
 .edit-profile-actions {
-    margin-top: 30px;
+    margin-top: var(--space-xl);
     text-align: right;
 }
 
 .btn-save {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
     border: none;
     padding: 14px 35px;
-    font-size: 15px;
-    font-weight: 500;
-    border-radius: 50px;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-full);
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+    transition: all var(--transition-base);
+    box-shadow: 0 4px 15px var(--button-shadow);
 }
 
 .btn-save:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+    box-shadow: 0 6px 20px var(--button-shadow);
 }
 
 .btn-save:disabled {
-    background: #ccc;
+    background: var(--border-color);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+    opacity: 0.6;
 }
 
 .loading-container {
@@ -172,6 +174,6 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
-    font-family: 'Poppins', sans-serif;
-    color: #666;
+    font-family: var(--font-primary);
+    color: var(--text-secondary);
 }

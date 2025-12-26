@@ -363,7 +363,9 @@ const VotingReport = () => {
           mt: "40px",
           backgroundColor: colors.primary[400],
           borderRadius: "16px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          boxShadow: theme.palette.mode === "dark"
+            ? "0 4px 20px rgba(0, 0, 0, 0.3)"
+            : "0 4px 20px rgba(0, 0, 0, 0.08)",
         }}
       >
         <CardContent sx={{ p: "24px !important" }}>
@@ -381,8 +383,12 @@ const VotingReport = () => {
                 fontSize: "14px",
               },
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "rgba(134, 141, 251, 0.1)",
-                color: colors.blueAccent[300],
+                backgroundColor: theme.palette.mode === "dark"
+                  ? "rgba(134, 141, 251, 0.1)"
+                  : "rgba(134, 141, 251, 0.08)",
+                color: theme.palette.mode === "dark"
+                  ? colors.blueAccent[300]
+                  : colors.blueAccent[600],
                 borderBottom: `2px solid ${colors.primary[500]}`,
                 fontSize: "15px",
                 fontWeight: "bold",
@@ -410,7 +416,9 @@ const VotingReport = () => {
           mt: "40px",
           backgroundColor: colors.primary[400],
           borderRadius: "16px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          boxShadow: theme.palette.mode === "dark"
+            ? "0 4px 20px rgba(0, 0, 0, 0.3)"
+            : "0 4px 20px rgba(0, 0, 0, 0.08)",
         }}
       >
         <CardContent sx={{ p: "24px !important" }}>
@@ -428,8 +436,12 @@ const VotingReport = () => {
                 fontSize: "14px",
               },
               "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "rgba(104, 112, 250, 0.1)",
-                color: colors.blueAccent[300],
+                backgroundColor: theme.palette.mode === "dark"
+                  ? "rgba(104, 112, 250, 0.1)"
+                  : "rgba(104, 112, 250, 0.08)",
+                color: theme.palette.mode === "dark"
+                  ? colors.blueAccent[300]
+                  : colors.blueAccent[600],
                 borderBottom: `2px solid ${colors.primary[500]}`,
                 fontSize: "15px",
                 fontWeight: "bold",
@@ -485,9 +497,11 @@ const VotingReport = () => {
       <Card
         sx={{
           mt: "40px",
-          backgroundColor: "rgba(134, 141, 251, 0.05)",
+          backgroundColor: theme.palette.mode === "dark"
+            ? "rgba(134, 141, 251, 0.05)"
+            : "rgba(134, 141, 251, 0.03)",
           borderRadius: "16px",
-          border: `1px solid ${colors.primary[500]}`,
+          border: `1px solid ${theme.palette.mode === "dark" ? colors.primary[500] : colors.grey[700]}`,
         }}
       >
         <CardContent>

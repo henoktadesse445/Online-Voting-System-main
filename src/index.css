@@ -1,3 +1,4 @@
+@import './styles/design-tokens.css';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
 html {
@@ -6,41 +7,45 @@ html {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
+/* CSS Variables for theme support */
 :root {
-  /* Default Dark Mode */
-  --bg-primary: #000000;
-  --bg-secondary: #0a0b0e;
-  --bg-card: #15161a;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --accent-color: #4f46e5;
-  --border-color: #2d2d2d;
-  --shadow-color: rgba(0, 0, 0, 0.5);
+  /* Dark Mode (default) - synced with MUI theme */
+  --bg-primary: #141b2d;
+  --bg-secondary: #1F2A40;
+  --bg-card: #1F2A40;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a3a3a3;
+  --border-color: #3d3d3d;
+  --accent-color: #6870fa;
 }
 
+/* Default Dark Mode */
+body {
+  background-color: #141b2d;
+  color: #e0e0e0;
+}
+
+/* Light Mode */
 body.light-mode {
-  /* Light Mode Overrides */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
+  background-color: #fcfcfc;
+  color: #1f2937;
+
+  /* Light Mode CSS Variables */
+  --bg-primary: #fcfcfc;
+  --bg-secondary: #f5f5f5;
   --bg-card: #ffffff;
   --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --accent-color: #4f46e5;
+  --text-secondary: #6b7280;
   --border-color: #e5e7eb;
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  --accent-color: #6870fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

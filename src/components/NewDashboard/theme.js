@@ -137,7 +137,7 @@ export const themeSettings = (mode) => {
                 },
                 background: {
                     default: colors.primary[500],
-
+                    paper: colors.primary[400],
                 }
             } : {
                 primary: {
@@ -153,42 +153,61 @@ export const themeSettings = (mode) => {
                 },
                 background: {
                     default: "#fcfcfc",
+                    paper: "#ffffff",
                 }
             }),
         },
         typography: {
             fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
-            fontSize: 12,
+            fontSize: 14, // Increased from 12px for better readability
             h1: {
                 fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 40,
                 fontWeight: 800,
+                lineHeight: 1.2,
             },
             h2: {
                 fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 32,
                 fontWeight: 700,
+                lineHeight: 1.3,
             },
             h3: {
                 fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 24,
                 fontWeight: 700,
+                lineHeight: 1.4,
             },
             h4: {
                 fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 20,
                 fontWeight: 600,
+                lineHeight: 1.5,
             },
             h5: {
                 fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 16,
                 fontWeight: 600,
+                lineHeight: 1.5,
             },
             h6: {
                 fontFamily: ["Outfit", "Inter", "sans-serif"].join(","),
                 fontSize: 14,
                 fontWeight: 600,
+                lineHeight: 1.6,
+            },
+            body1: {
+                fontSize: 14,
+                lineHeight: 1.6,
+            },
+            body2: {
+                fontSize: 13,
+                lineHeight: 1.6,
             }
+        },
+        spacing: 8, // 8px base unit
+        shape: {
+            borderRadius: 12, // Consistent border radius
         },
         components: {
             MuiButton: {
@@ -197,6 +216,16 @@ export const themeSettings = (mode) => {
                         borderRadius: "10px",
                         textTransform: "none",
                         fontWeight: 600,
+                        padding: "10px 20px",
+                        fontSize: "14px",
+                        transition: "all 0.2s ease-in-out",
+                        "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                        }
+                    },
+                    contained: {
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
                     }
                 }
             },
@@ -204,7 +233,87 @@ export const themeSettings = (mode) => {
                 styleOverrides: {
                     root: {
                         borderRadius: "16px",
-                        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.1)",
+                        boxShadow: mode === "dark"
+                            ? "0 4px 20px rgba(0, 0, 0, 0.3)"
+                            : "0 4px 20px rgba(0, 0, 0, 0.08)",
+                        transition: "all 0.3s ease-in-out",
+                    }
+                }
+            },
+            MuiCardContent: {
+                styleOverrides: {
+                    root: {
+                        padding: "24px",
+                        "&:last-child": {
+                            paddingBottom: "24px",
+                        }
+                    }
+                }
+            },
+            MuiPaper: {
+                styleOverrides: {
+                    root: {
+                        borderRadius: "12px",
+                    },
+                    elevation1: {
+                        boxShadow: mode === "dark"
+                            ? "0 2px 8px rgba(0, 0, 0, 0.2)"
+                            : "0 2px 8px rgba(0, 0, 0, 0.06)",
+                    }
+                }
+            },
+            MuiTextField: {
+                styleOverrides: {
+                    root: {
+                        "& .MuiOutlinedInput-root": {
+                            borderRadius: "10px",
+                        }
+                    }
+                }
+            },
+            MuiDataGrid: {
+                styleOverrides: {
+                    root: {
+                        border: "none",
+                        borderRadius: "12px",
+                    },
+                    cell: {
+                        borderBottom: `1px solid ${mode === "dark" ? colors.primary[500] : colors.grey[800]}`,
+                        fontSize: "14px",
+                        padding: "12px 16px",
+                    },
+                    columnHeaders: {
+                        backgroundColor: mode === "dark"
+                            ? "rgba(134, 141, 251, 0.1)"
+                            : "rgba(134, 141, 251, 0.05)",
+                        borderBottom: `2px solid ${mode === "dark" ? colors.primary[500] : colors.grey[700]}`,
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                    },
+                    row: {
+                        "&:hover": {
+                            backgroundColor: mode === "dark"
+                                ? "rgba(134, 141, 251, 0.05)"
+                                : "rgba(134, 141, 251, 0.03)",
+                        }
+                    }
+                }
+            },
+            MuiIconButton: {
+                styleOverrides: {
+                    root: {
+                        transition: "all 0.2s ease-in-out",
+                        "&:hover": {
+                            transform: "scale(1.1)",
+                        }
+                    }
+                }
+            },
+            MuiChip: {
+                styleOverrides: {
+                    root: {
+                        borderRadius: "8px",
+                        fontWeight: 500,
                     }
                 }
             }

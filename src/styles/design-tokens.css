@@ -1,0 +1,266 @@
+/* ============================================
+   UNIFIED DESIGN SYSTEM - GLOBAL TOKENS
+   Single source of truth for colors, spacing, typography
+   ============================================ */
+
+/* ============================================
+   COLOR PALETTE (Minimal)
+   ============================================ */
+
+:root {
+    /* Primary Brand Colors */
+    --color-primary: #6870fa;
+    --color-primary-dark: #535ac8;
+    --color-primary-light: #868dfb;
+
+    /* Accent Colors (minimal use) */
+    --color-success: #4cceac;
+    --color-error: #db4f4a;
+    --color-warning: #f39c12;
+    --color-info: #6dabe4;
+
+    /* Dark Mode (default) */
+    --bg-primary: #141b2d;
+    --bg-secondary: #1F2A40;
+    --bg-surface: #1F2A40;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a3a3a3;
+    --text-muted: #6b7280;
+    --border-color: #3d3d3d;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+
+    /* Component-specific */
+    --navbar-bg: rgba(20, 27, 45, 0.95);
+    --card-bg: var(--bg-surface);
+    --input-bg: transparent;
+    --button-shadow: rgba(104, 112, 250, 0.3);
+}
+
+/* Light Mode Overrides */
+body.light-mode {
+    --bg-primary: #fcfcfc;
+    --bg-secondary: #f5f5f5;
+    --bg-surface: #ffffff;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --border-color: #e5e7eb;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+
+    --navbar-bg: rgba(255, 255, 255, 0.95);
+    --card-bg: #ffffff;
+    --input-bg: transparent;
+    --button-shadow: rgba(104, 112, 250, 0.2);
+}
+
+/* ============================================
+   SPACING SCALE (8px grid)
+   ============================================ */
+
+:root {
+    --space-xs: 4px;
+    /* 0.5 unit */
+    --space-sm: 8px;
+    /* 1 unit */
+    --space-md: 16px;
+    /* 2 units */
+    --space-lg: 24px;
+    /* 3 units */
+    --space-xl: 32px;
+    /* 4 units */
+    --space-xxl: 48px;
+    /* 6 units */
+    --space-xxxl: 64px;
+    /* 8 units */
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+:root {
+    /* Font Families */
+    --font-primary: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Courier New", monospace;
+
+    /* Font Sizes */
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 32px;
+    --font-size-4xl: 40px;
+
+    /* Font Weights */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+
+    /* Line Heights */
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.6;
+}
+
+/* ============================================
+   COMPONENT STANDARDS
+   ============================================ */
+
+:root {
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px var(--shadow-color);
+    --shadow-md: 0 4px 20px var(--shadow-color);
+    --shadow-lg: 0 8px 32px var(--shadow-color);
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.2s ease;
+    --transition-slow: 0.3s ease;
+
+    /* Z-index Scale */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Container */
+.container-standard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+}
+
+/* Card */
+.card-standard {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-slow);
+}
+
+.card-standard:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Button Base */
+.btn-standard {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    min-height: 40px;
+}
+
+.btn-standard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--button-shadow);
+}
+
+.btn-standard:active {
+    transform: translateY(0);
+}
+
+.btn-standard:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Button Primary */
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px var(--button-shadow);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+}
+
+/* Input Standard */
+.input-standard {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    width: 100%;
+    transition: border-color var(--transition-base);
+}
+
+.input-standard:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.input-standard::placeholder {
+    color: var(--text-muted);
+}
+
+/* Navbar Standard */
+.navbar-standard {
+    background: var(--navbar-bg);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--space-md) var(--space-lg);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    transition: all var(--transition-base);
+}
+
+/* Text Utilities */
+.text-primary {
+    color: var(--text-primary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+:root {
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+}

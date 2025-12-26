@@ -54,7 +54,9 @@ const Topbar = () => {
             p={2}
             sx={{
                 backdropFilter: "blur(10px)",
-                backgroundColor: "rgba(20, 27, 45, 0.7)",
+                backgroundColor: theme.palette.mode === "dark"
+                    ? "rgba(20, 27, 45, 0.7)"
+                    : "rgba(255, 255, 255, 0.7)",
                 position: "sticky",
                 top: 0,
                 zIndex: 1000,

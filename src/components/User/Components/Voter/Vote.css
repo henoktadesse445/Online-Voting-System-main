@@ -1,43 +1,45 @@
+/* Vote.css - Using Global Design Tokens */
+
 .Vote-Page {
-    background-color: #f5f5f5;
+    background-color: var(--bg-primary);
     background-repeat: no-repeat;
     background-size: cover;
     min-height: 100vh;
+    transition: background-color var(--transition-slow);
 }
 
 .candidate {
-    /* margin: 0rem 1rem; */
-    padding: 2rem 0;
+    padding: var(--space-xxl) 0;
 }
 
 .candidate h2 {
-    color: #333;
-    margin: 1rem auto;
+    color: var(--text-primary);
+    margin: var(--space-md) auto;
     justify-content: center;
     align-items: center;
     text-align: center;
-    font-size: 2.5rem;
-    font-weight: bold;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
 }
 
 .Heading1 {
-    padding: 0.5rem;
+    padding: var(--space-sm);
     justify-content: center;
     align-items: center;
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xxl);
 }
 
 .Heading1 p {
-    font-weight: bold;
-    font-size: 1.7rem;
-    color: #555;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-xl);
+    color: var(--text-secondary);
     margin: 0;
 }
 
 .Heading1 p span {
-    font-weight: bold;
-    color: #2196F3;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
 }
 
 .VoteContent {
@@ -52,18 +54,26 @@
 }
 
 .VoteGivenBox button {
-    background-color: rgb(9, 9, 82);
-    padding: 0.5rem 2rem;
-    margin: 0.5rem;
-    font-size: 1.1rem;
-    border-radius: 1.5rem;
-    color: whitesmoke;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    padding: var(--space-sm) var(--space-xxl);
+    margin: var(--space-sm);
+    font-size: var(--font-size-md);
+    border-radius: var(--radius-full);
+    color: white;
     border: none;
     cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: 0 4px 12px var(--button-shadow);
+    font-weight: var(--font-weight-semibold);
+}
+
+.VoteGivenBox button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px var(--button-shadow);
 }
 
 .VoteGivenBox button a {
-    color: whitesmoke;
+    color: white;
     text-decoration: none;
     display: block;
     width: 100%;
@@ -72,6 +82,6 @@
 
 @media (max-width: 600px) {
     .candidate h2 {
-        font-size: 1.8rem;
+        font-size: var(--font-size-2xl);
     }
 }
