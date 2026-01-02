@@ -1,9 +1,9 @@
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
-import NewDashBoard from "./scenes/dashboard/NewDashBoard";
 import './New.css'
 import { useTheme } from "@mui/material";
 import { tokens } from "./theme";
+import { Outlet } from "react-router-dom";
 
 
 /*
@@ -18,7 +18,7 @@ function New() {
             <Sidebar />
             <main className="content">
                 <Topbar />
-                <NewDashBoard />
+                <Outlet />
             </main>
         </div>
     )

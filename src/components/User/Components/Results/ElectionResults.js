@@ -2,21 +2,21 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
 import UserNavbar from '../../../Navbar/UserNavbar';
-import { 
-    Box, 
-    Container, 
-    Paper, 
-    Typography, 
-    Grid, 
-    Button, 
-    LinearProgress, 
+import {
+    Box,
+    Container,
+    Paper,
+    Typography,
+    Grid,
+    Button,
+    LinearProgress,
     Chip,
     CircularProgress
 } from '@mui/material';
-import { 
-    Refresh, 
-    TrendingUp, 
-    People, 
+import {
+    Refresh,
+    TrendingUp,
+    People,
     EmojiEvents,
     Person
 } from '@mui/icons-material';
@@ -58,11 +58,11 @@ const ElectionResults = () => {
             // Also fetch all candidates for backward compatibility
             const response = await axios.get(`${BASE_URL}/getCandidate`);
             const candidatesData = response.data.candidate;
-            
+
             // Sort by votes (highest first)
             const sorted = candidatesData.sort((a, b) => (b.votes || 0) - (a.votes || 0));
             setCandidates(sorted);
-            
+
             // Calculate total votes
             const total = sorted.reduce((sum, candidate) => sum + (candidate.votes || 0), 0);
             setTotalVotes(total);
@@ -77,7 +77,7 @@ const ElectionResults = () => {
 
     useEffect(() => {
         fetchResults();
-        
+
         // Auto-refresh every 10 seconds
         const interval = setInterval(() => {
             fetchResults();
@@ -108,12 +108,12 @@ const ElectionResults = () => {
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
                     <Box sx={{ backgroundColor: colors.primary[500], minHeight: '100vh' }}>
-                <UserNavbar />
-                        <Box 
-                            display="flex" 
-                            flexDirection="column" 
-                            justifyContent="center" 
-                            alignItems="center" 
+                        <UserNavbar />
+                        <Box
+                            display="flex"
+                            flexDirection="column"
+                            justifyContent="center"
+                            alignItems="center"
                             minHeight="80vh"
                         >
                             <CircularProgress sx={{ color: colors.greenAccent[500], mb: 2 }} />
@@ -132,391 +132,272 @@ const ElectionResults = () => {
             <ThemeProvider theme={theme}>
                 <CssBaseline />
                 <Box sx={{ backgroundColor: colors.primary[500], minHeight: '100vh', pb: 4 }}>
-            <UserNavbar />
-            <Container maxWidth="xl" sx={{ pt: 4 }}>
-                {/* Header Section */}
-                <Paper
-                    elevation={3}
-                    sx={{
-                        p: 4,
-                        mb: 4,
-                        backgroundColor: colors.primary[400],
-                        textAlign: 'center',
-                    }}
-                >
-                    <Box display="flex" alignItems="center" justifyContent="center" gap={2} mb={2}>
-                        <TrendingUp sx={{ fontSize: 40, color: colors.greenAccent[500] }} />
-                        <Typography variant="h3" color={colors.grey[100]} fontWeight="bold">
-                        Live Election Results
-                        </Typography>
-                    </Box>
-                    <Typography variant="h6" color={colors.grey[300]} mb={3}>
-                        Real-time voting results - Auto-updates every 10 seconds
-                    </Typography>
-                    
-                    <Box display="flex" justifyContent="center" gap={3} mb={3} sx={{ flexWrap: 'wrap' }}>
-                        <Paper
-                            elevation={2}
-                            sx={{
-                                p: 3,
-                                backgroundColor: colors.blueAccent[700],
-                                minWidth: '200px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 2,
-                            }}
-                        >
-                            <People sx={{ fontSize: 30, color: colors.grey[100] }} />
-                            <Box>
-                                <Typography variant="h4" color={colors.grey[100]} fontWeight="bold">
-                                    {candidates.length}
-                                </Typography>
-                                <Typography variant="body2" color={colors.grey[300]}>
-                                    Candidates
+                    <UserNavbar />
+                    <Container maxWidth="xl" sx={{ pt: 4 }}>
+                        {/* Header Section */}
+                        <Box className="glass-panel results-header-glass">
+                            <Box display="flex" alignItems="center" justifyContent="center" gap={2} mb={2}>
+                                <TrendingUp sx={{ fontSize: 48, color: colors.greenAccent[500] }} />
+                                <Typography variant="h1">
+                                    Live Election Results
                                 </Typography>
                             </Box>
-                        </Paper>
-                        <Paper
-                            elevation={2}
-                            sx={{
-                                p: 3,
-                                backgroundColor: colors.greenAccent[700],
-                                minWidth: '200px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 2,
-                            }}
-                        >
-                            <EmojiEvents sx={{ fontSize: 30, color: colors.grey[100] }} />
-                            <Box>
-                                <Typography variant="h4" color={colors.grey[100]} fontWeight="bold">
-                                    {totalVotes}
-                                </Typography>
-                                <Typography variant="body2" color={colors.grey[300]}>
-                                    Total Votes
-                                </Typography>
-                            </Box>
-                        </Paper>
-                    </Box>
-
-                    <Button 
-                        variant="contained"
-                        onClick={() => fetchResults(true)}
-                        disabled={refreshing}
-                        startIcon={<Refresh sx={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />}
-                        sx={{
-                            backgroundColor: colors.blueAccent[600],
-                            color: colors.grey[100],
-                            '&:hover': {
-                                backgroundColor: colors.blueAccent[700],
-                            },
-                            mb: 2,
-                        }}
-                    >
-                        {refreshing ? 'Refreshing...' : 'Refresh Now'}
-                    </Button>
-                    <Typography variant="body2" color={colors.grey[300]}>
-                        Last updated: {lastUpdated.toLocaleTimeString()}
-                    </Typography>
-                </Paper>
-
-                {/* Winners by Position (After Election) */}
-                <Paper
-                    elevation={3}
-                    sx={{
-                        p: 4,
-                        mb: 4,
-                        backgroundColor: colors.primary[400],
-                    }}
-                >
-                    <Box display="flex" alignItems="center" gap={2} mb={3}>
-                        <EmojiEvents sx={{ fontSize: 40, color: colors.greenAccent[500] }} />
-                        <Box>
-                            <Typography variant="h4" color={colors.grey[100]} fontWeight="bold">
-                                Winners by Position
+                            <Typography variant="h6" color="var(--text-secondary)" mb={4}>
+                                Real-time voting results - Auto-updates every 10 seconds
                             </Typography>
-                            <Typography variant="body2" color={colors.grey[300]} sx={{ mt: 0.5 }}>
-                                Positions are automatically assigned after election ends based on vote totals
+
+                            <Box className="stats-grid">
+                                <Box className="stat-card-premium candidates">
+                                    <People sx={{ fontSize: 40, color: 'white' }} />
+                                    <Box>
+                                        <Typography variant="h4">
+                                            {candidates.length}
+                                        </Typography>
+                                        <p>Candidates</p>
+                                    </Box>
+                                </Box>
+                                <Box className="stat-card-premium votes">
+                                    <EmojiEvents sx={{ fontSize: 40, color: 'white' }} />
+                                    <Box>
+                                        <Typography variant="h4">
+                                            {totalVotes}
+                                        </Typography>
+                                        <p>Total Votes</p>
+                                    </Box>
+                                </Box>
+                            </Box>
+
+                            <Button
+                                className="btn-refresh-modern"
+                                onClick={() => fetchResults(true)}
+                                disabled={refreshing}
+                                startIcon={<Refresh className={refreshing ? 'spinning' : ''} />}
+                                fullWidth={false}
+                            >
+                                {refreshing ? 'Refreshing...' : 'Refresh Now'}
+                            </Button>
+                            <Typography variant="body2" color="var(--text-muted)" sx={{ mt: 3, opacity: 0.8 }}>
+                                Last updated: {lastUpdated.toLocaleTimeString()}
                             </Typography>
                         </Box>
-                    </Box>
-                    <Grid container spacing={3}>
-                        {positions.map((position) => {
-                            const winner = winnersByPosition[position];
-                            return (
-                                <Grid item xs={12} sm={6} md={4} key={position}>
-                                    <Paper
-                                        elevation={winner ? 4 : 2}
-                                        sx={{
-                                            p: 3,
-                                            backgroundColor: winner ? colors.greenAccent[800] : colors.primary[600],
-                                            border: winner ? `3px solid ${colors.greenAccent[500]}` : 'none',
-                                            borderRadius: 2,
-                                            height: '100%',
-                                        }}
-                                    >
-                                        <Typography variant="h6" color={colors.grey[100]} fontWeight="bold" mb={2}>
-                                            {position}
-                                        </Typography>
-                                        {winner && winner.candidate ? (
-                                            <Box>
-                                                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                                                    {winner.candidate.img ? (
-                                                        <Box
-                                                            component="img"
-                                                            src={`${BASE_URL}${winner.candidate.img}`}
-                                                            alt={winner.candidate.name}
+
+                        {/* Winners by Position (After Election) */}
+                        <Box className="glass-panel">
+                            <Box display="flex" alignItems="center" gap={2} mb={4}>
+                                <EmojiEvents sx={{ fontSize: 40, color: 'var(--color-success)' }} />
+                                <Box>
+                                    <Typography variant="h4" color="var(--text-primary)" fontWeight="800">
+                                        Winners by Position
+                                    </Typography>
+                                    <Typography variant="body2" color="var(--text-secondary)" sx={{ mt: 0.5 }}>
+                                        Positions are automatically assigned after election ends based on vote totals
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <Grid container spacing={4}>
+                                {positions.map((position) => {
+                                    const winner = winnersByPosition[position];
+                                    return (
+                                        <Grid item xs={12} sm={6} md={4} key={position}>
+                                            <Box className={`candidate-result-card ${winner ? 'winner' : ''}`}>
+                                                <Typography variant="h6" color="var(--color-primary)" fontWeight="800" mb={3} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+                                                    {position}
+                                                </Typography>
+                                                {winner && winner.candidate ? (
+                                                    <Box>
+                                                        <Box display="flex" alignItems="center" gap={2} mb={3}>
+                                                            {winner.candidate.img ? (
+                                                                <Box
+                                                                    component="img"
+                                                                    src={`${BASE_URL}${winner.candidate.img}`}
+                                                                    alt={winner.candidate.name}
+                                                                    sx={{
+                                                                        width: 70,
+                                                                        height: 70,
+                                                                        borderRadius: '50%',
+                                                                        objectFit: 'cover',
+                                                                        border: `3px solid var(--color-success)`,
+                                                                        boxShadow: '0 0 15px rgba(76, 206, 172, 0.4)'
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <Box
+                                                                    sx={{
+                                                                        width: 70,
+                                                                        height: 70,
+                                                                        borderRadius: '50%',
+                                                                        background: 'linear-gradient(135deg, var(--color-success), #3ba188)',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        color: 'white',
+                                                                        fontSize: '2rem',
+                                                                        fontWeight: '800',
+                                                                    }}
+                                                                >
+                                                                    {winner.candidate.name?.charAt(0) || '?'}
+                                                                </Box>
+                                                            )}
+                                                            <Box>
+                                                                <Typography variant="h6" color="var(--text-primary)" fontWeight="800">
+                                                                    {winner.candidate.name}
+                                                                </Typography>
+                                                                <Typography variant="body2" color="var(--text-muted)">
+                                                                    {winner.candidate.party || winner.candidate.department || 'Not specified'}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                                            <Typography variant="body2" color="var(--text-secondary)">
+                                                                Final Votes:
+                                                            </Typography>
+                                                            <Typography variant="h4" color="var(--color-success)" fontWeight="900">
+                                                                {winner.voteCount || 0}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Chip
+                                                            icon={<EmojiEvents sx={{ color: 'white !important' }} />}
+                                                            label="Elected Official"
                                                             sx={{
-                                                                width: 60,
-                                                                height: 60,
-                                                                borderRadius: '50%',
-                                                                objectFit: 'cover',
-                                                                border: `3px solid ${colors.greenAccent[500]}`,
+                                                                mt: 2,
+                                                                background: 'linear-gradient(135deg, var(--color-success), #3ba188)',
+                                                                color: 'white',
+                                                                fontWeight: '800',
+                                                                width: '100%',
+                                                                height: 32,
+                                                                border: 'none'
                                                             }}
                                                         />
-                                                    ) : (
-                                                        <Box
-                                                            sx={{
-                                                                width: 60,
-                                                                height: 60,
-                                                                borderRadius: '50%',
-                                                                backgroundColor: colors.greenAccent[700],
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                color: colors.grey[100],
-                                                                fontSize: '1.8rem',
-                                                                fontWeight: 'bold',
-                                                            }}
-                                                        >
-                                                            {winner.candidate.name?.charAt(0) || '?'}
-                                                        </Box>
-                                                    )}
-                                                    <Box>
-                                                        <Typography variant="h6" color={colors.grey[100]} fontWeight="bold">
-                                                            {winner.candidate.name}
+                                                    </Box>
+                                                ) : (
+                                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="150px" sx={{ opacity: 0.6 }}>
+                                                        <CircularProgress size={24} sx={{ mb: 2, color: 'var(--text-muted)' }} />
+                                                        <Typography variant="body2" color="var(--text-muted)" textAlign="center">
+                                                            Outcome Pending
                                                         </Typography>
-                                                        <Typography variant="body2" color={colors.grey[300]}>
-                                                            {winner.candidate.party || winner.candidate.department || 'Not specified'}
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        </Grid>
+                                    );
+                                })}
+                            </Grid>
+                        </Box>
+
+                        {/* All Candidates Results */}
+                        <Box className="glass-panel">
+                            <Typography variant="h4" color="var(--text-primary)" fontWeight="800" mb={4}>
+                                Detailed Candidate Performance
+                            </Typography>
+                            <Grid container spacing={3}>
+                                {candidates.length === 0 ? (
+                                    <Grid item xs={12}>
+                                        <Box sx={{ p: 10, textAlign: 'center' }}>
+                                            <Person sx={{ fontSize: 64, color: 'var(--text-muted)', mb: 2, opacity: 0.3 }} />
+                                            <Typography variant="h5" color="var(--text-secondary)">
+                                                No data available yet
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                ) : (
+                                    candidates.map((candidate, index) => (
+                                        <Grid item xs={12} sm={6} md={4} key={candidate._id}>
+                                            <Box className={`candidate-result-card ${index === 0 ? 'winner' : ''}`}>
+                                                <Box display="flex" alignItems="center" gap={2} mb={3}>
+                                                    <Typography className="rank-display">
+                                                        #{index + 1}
+                                                    </Typography>
+                                                    <Box>
+                                                        {candidate.img ? (
+                                                            <Box
+                                                                component="img"
+                                                                src={candidate.img}
+                                                                alt={candidate.name}
+                                                                sx={{
+                                                                    width: 60,
+                                                                    height: 60,
+                                                                    borderRadius: '50%',
+                                                                    objectFit: 'cover',
+                                                                    border: `2px solid ${index === 0 ? 'var(--color-success)' : 'var(--color-primary)'}`,
+                                                                    boxShadow: 'var(--shadow-sm)'
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <Box
+                                                                sx={{
+                                                                    width: 60,
+                                                                    height: 60,
+                                                                    borderRadius: '50%',
+                                                                    background: index === 0 ? 'linear-gradient(135deg, var(--color-success), #3ba188)' : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    color: 'white',
+                                                                    fontSize: '1.5rem',
+                                                                    fontWeight: 'bold',
+                                                                }}
+                                                            >
+                                                                {candidate.name?.charAt(0) || '?'}
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                    <Box flexGrow={1}>
+                                                        <Typography variant="h6" color="var(--text-primary)" fontWeight="800" noWrap>
+                                                            {candidate.name || 'Unknown'}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="var(--text-muted)">
+                                                            {candidate.party || candidate.department || 'Not specified'}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
-                                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                                    <Typography variant="body1" color={colors.grey[300]}>
-                                                        Votes:
-                                                    </Typography>
-                                                    <Typography variant="h5" color={colors.greenAccent[400]} fontWeight="bold">
-                                                        {winner.voteCount || 0}
-                                                    </Typography>
-                                                </Box>
-                                                <Chip
-                                                    icon={<EmojiEvents />}
-                                                    label="Winner!"
-                                                    sx={{
-                                                        mt: 2,
-                                                        backgroundColor: colors.greenAccent[600],
-                                                        color: colors.grey[100],
-                                                        fontWeight: 'bold',
-                                                        width: '100%',
-                                                    }}
-                                                />
-                                            </Box>
-                                        ) : (
-                                            <Typography variant="body1" color={colors.grey[300]} textAlign="center">
-                                                Position not assigned yet (wait for election to end)
-                                            </Typography>
-                                        )}
-                                    </Paper>
-                                </Grid>
-                            );
-                        })}
-                    </Grid>
-                </Paper>
 
-                {/* All Candidates Results */}
-                <Paper
-                    elevation={3}
-                    sx={{
-                        p: 4,
-                        mb: 4,
-                        backgroundColor: colors.primary[400],
-                    }}
-                >
-                    <Typography variant="h4" color={colors.grey[100]} fontWeight="bold" mb={3}>
-                        All Candidates Results
-                    </Typography>
-                    <Grid container spacing={3}>
-                        {candidates.length === 0 ? (
-                            <Grid item xs={12}>
-                                <Paper
-                                    elevation={3}
-                                    sx={{
-                                        p: 5,
-                                        textAlign: 'center',
-                                        backgroundColor: colors.primary[400],
-                                    }}
-                                >
-                                    <Typography variant="h5" color={colors.grey[100]} gutterBottom>
-                                        No candidates registered yet
-                                    </Typography>
-                                    <Typography variant="body1" color={colors.grey[300]}>
-                                        Check back later for election results
-                                    </Typography>
-                                </Paper>
-                            </Grid>
-                        ) : (
-                            candidates.map((candidate, index) => (
-                            <Grid item xs={12} sm={6} md={4} key={candidate._id}>
-                                <Paper
-                                    elevation={index === 0 ? 6 : 3}
-                                    sx={{
-                                        p: 3,
-                                        backgroundColor: colors.primary[400],
-                                        border: index === 0 ? `3px solid ${colors.greenAccent[600]}` : 'none',
-                                        borderRadius: 2,
-                                        height: '100%',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            transform: 'translateY(-5px)',
-                                            boxShadow: 6,
-                                        },
-                                    }}
-                                >
-                                    <Box display="flex" alignItems="center" gap={2} mb={3}>
-                                        <Box
-                                            sx={{
-                                                fontSize: '2rem',
-                                                minWidth: '50px',
-                                                textAlign: 'center',
-                                                fontWeight: 'bold',
-                                            }}
-                                        >
-                                                {getRankIcon(index)}
-                                        </Box>
-                                        <Box>
-                                                {candidate.img ? (
-                                                <Box
-                                                    component="img"
-                                                        src={candidate.img} 
-                                                        alt={candidate.name}
-                                                    sx={{
-                                                        width: 60,
-                                                        height: 60,
-                                                        borderRadius: '50%',
-                                                        objectFit: 'cover',
-                                                        border: `3px solid ${colors.blueAccent[500]}`,
-                                                    }}
+                                                <Box className="vote-progress-wrapper">
+                                                    <Box className="progress-label-group">
+                                                        <Typography variant="body2" color="var(--text-secondary)" fontWeight="700">
+                                                            Vote Count: <span style={{ color: index === 0 ? 'var(--color-success)' : 'var(--color-primary)', fontSize: '1.2rem' }}>{candidate.votes || 0}</span>
+                                                        </Typography>
+                                                        <Typography variant="body2" color="var(--text-primary)" fontWeight="800">
+                                                            {getPercentage(candidate.votes || 0)}%
+                                                        </Typography>
+                                                    </Box>
+
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        className="custom-progress"
+                                                        value={parseFloat(getPercentage(candidate.votes || 0))}
                                                     />
-                                                ) : (
-                                                <Box
-                                                    sx={{
-                                                        width: 60,
-                                                        height: 60,
-                                                        borderRadius: '50%',
-                                                        backgroundColor: colors.blueAccent[600],
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: colors.grey[100],
-                                                        fontSize: '1.8rem',
-                                                        fontWeight: 'bold',
-                                                    }}
-                                                >
-                                                    {candidate.name?.charAt(0) || '?'}
+
+                                                    {index === 0 && totalVotes > 0 && (
+                                                        <Chip
+                                                            icon={<TrendingUp sx={{ color: 'white !important' }} />}
+                                                            label="Currently Leading"
+                                                            sx={{
+                                                                mt: 3,
+                                                                background: 'linear-gradient(135deg, var(--color-success), #20c997)',
+                                                                color: 'white',
+                                                                fontWeight: '800',
+                                                                width: '100%',
+                                                                borderRadius: '8px',
+                                                                height: 36
+                                                            }}
+                                                        />
+                                                    )}
                                                 </Box>
-                                            )}
-                                        </Box>
-                                        <Box flexGrow={1}>
-                                            <Typography variant="h6" color={colors.grey[100]} fontWeight="bold" noWrap>
-                                                {candidate.name || 'Unknown'}
-                                            </Typography>
-                                            <Typography variant="body2" color={colors.grey[300]}>
-                                                {candidate.party || candidate.department || 'Not specified'}
-                                            </Typography>
-                                            {candidate.position && (
-                                                <Typography variant="body2" color={colors.greenAccent[400]} fontWeight="bold" sx={{ mt: 0.5 }}>
-                                                    Position: {candidate.position}
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </Box>
-
-                                    <Box>
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                                            <Typography variant="body1" color={colors.grey[300]} fontWeight="bold">
-                                                Votes:
-                                            </Typography>
-                                            <Typography variant="h5" color={colors.greenAccent[400]} fontWeight="bold">
-                                                {candidate.votes || 0}
-                                            </Typography>
-                                        </Box>
-                                        
-                                        <Box mb={2}>
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={parseFloat(getPercentage(candidate.votes || 0))}
-                                                sx={{
-                                                    height: 25,
-                                                    borderRadius: 2,
-                                                    backgroundColor: colors.primary[600],
-                                                    '& .MuiLinearProgress-bar': {
-                                                        backgroundColor:
-                                                            index === 0 ? colors.greenAccent[500] :
-                                                            index === 1 ? colors.blueAccent[500] :
-                                                            index === 2 ? colors.redAccent[500] :
-                                                            colors.grey[600],
-                                                        borderRadius: 2,
-                                                    },
-                                                }}
-                                            />
-                                            <Typography 
-                                                variant="body2" 
-                                                color={colors.grey[100]} 
-                                                mt={0.5}
-                                                textAlign="center"
-                                                fontWeight="bold"
-                                            >
-                                                {getPercentage(candidate.votes || 0)}%
-                                            </Typography>
-                                        </Box>
-                                            
-                                            {index === 0 && totalVotes > 0 && (
-                                            <Chip
-                                                icon={<EmojiEvents />}
-                                                label="Currently Leading!"
-                                                sx={{
-                                                    backgroundColor: colors.greenAccent[600],
-                                                    color: colors.grey[100],
-                                                    fontWeight: 'bold',
-                                                    width: '100%',
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-                                </Paper>
+                                            </Box>
+                                        </Grid>
+                                    ))
+                                )}
                             </Grid>
-                        ))
-                    )}
-                </Grid>
-                </Paper>
+                        </Box>
 
-                {/* Footer Note */}
-                <Paper
-                    elevation={2}
-                    sx={{
-                        p: 3,
-                        mt: 5,
-                        textAlign: 'center',
-                        backgroundColor: colors.primary[400],
-                    }}
-                >
-                    <Typography variant="body1" color={colors.grey[100]}>
-                                <strong>Note:</strong> Results are updated in real-time. 
-                                The final results will be announced after the voting period ends.
-                    </Typography>
-                </Paper>
-            </Container>
-        </Box>
+                        {/* Footer Note */}
+                        <Box className="glass-panel" sx={{ mt: 2, textAlign: 'center', background: 'rgba(0,0,0,0.1)' }}>
+                            <Typography variant="body1" color="var(--text-secondary)">
+                                <strong>Notice:</strong> All data is fetched in real-time from the blockchain. Final verification will be performed automatically once the voting session expires.
+                            </Typography>
+                        </Box>
+                    </Container>
+                </Box>
             </ThemeProvider>
         </ColorModeContext.Provider>
     );

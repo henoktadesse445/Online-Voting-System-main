@@ -7,6 +7,14 @@ import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PersonIcon from '@mui/icons-material/Person';
+import SchoolIcon from '@mui/icons-material/School';
+import SecurityIcon from '@mui/icons-material/Security';
+import BadgeIcon from '@mui/icons-material/Badge';
+import EmailIcon from '@mui/icons-material/Email';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import DescriptionIcon from '@mui/icons-material/Description';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 const EditProfile = () => {
     const navigate = useNavigate();
@@ -225,16 +233,18 @@ const EditProfile = () => {
 
                         {userRole === 'candidate' && (
                             <div className="info-box info">
-                                <strong>Candidate Mode Enabled</strong><br />
+                                <strong><AssessmentIcon sx={{ verticalAlign: 'middle', mr: 1, fontSize: 20 }} /> Candidate Mode Enabled</strong><br />
                                 You can edit your candidate information including party/department, bio, and CGPA securely here.
                             </div>
                         )}
 
-                        <div className="form-section">
-                            <h3 className="section-title">Personal Information</h3>
+                        <div className="edit-profile-section">
+                            <h3 className="section-title">
+                                <PersonIcon /> Personal Information
+                            </h3>
                             <div className="edit-profile-grid">
                                 <div className="edit-profile-group">
-                                    <label htmlFor="name">Full Name</label>
+                                    <label htmlFor="name"><BadgeIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> Full Name</label>
                                     <input
                                         type="text"
                                         name="name"
@@ -246,7 +256,7 @@ const EditProfile = () => {
                                     />
                                 </div>
                                 <div className="edit-profile-group">
-                                    <label htmlFor="voterId">Student ID</label>
+                                    <label htmlFor="voterId"><BadgeIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> Student ID</label>
                                     <input
                                         type="text"
                                         name="voterId"
@@ -258,7 +268,7 @@ const EditProfile = () => {
                                     />
                                 </div>
                                 <div className="edit-profile-group full-width">
-                                    <label htmlFor="email">Email Address</label>
+                                    <label htmlFor="email"><EmailIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> Email Address</label>
                                     <input
                                         type="email"
                                         name="email"
@@ -274,7 +284,9 @@ const EditProfile = () => {
 
                         {userRole === 'candidate' && (
                             <div className="edit-profile-section">
-                                <h3 className="section-title">Candidate Details</h3>
+                                <h3 className="section-title">
+                                    <SchoolIcon /> Candidate Details
+                                </h3>
 
                                 {userData && userData.position && (
                                     <div className="info-box success">
@@ -291,7 +303,7 @@ const EditProfile = () => {
 
                                 <div className="edit-profile-grid">
                                     <div className="edit-profile-group">
-                                        <label htmlFor="party">Department / Party</label>
+                                        <label htmlFor="party"><SchoolIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> Department / Party</label>
                                         <input
                                             type="text"
                                             name="party"
@@ -302,7 +314,7 @@ const EditProfile = () => {
                                         />
                                     </div>
                                     <div className="edit-profile-group">
-                                        <label htmlFor="cgpa">CGPA</label>
+                                        <label htmlFor="cgpa"><AssessmentIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> CGPA</label>
                                         <input
                                             type="number"
                                             name="cgpa"
@@ -316,7 +328,7 @@ const EditProfile = () => {
                                         />
                                     </div>
                                     <div className="edit-profile-group full-width">
-                                        <label htmlFor="bio">Manifesto / Bio</label>
+                                        <label htmlFor="bio"><DescriptionIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> Manifesto / Bio</label>
                                         <textarea
                                             name="bio"
                                             id="bio"
@@ -331,10 +343,12 @@ const EditProfile = () => {
                         )}
 
                         <div className="edit-profile-section">
-                            <h3 className="section-title">Security</h3>
+                            <h3 className="section-title">
+                                <SecurityIcon /> Security
+                            </h3>
                             <div className="edit-profile-grid">
                                 <div className="edit-profile-group">
-                                    <label htmlFor="pass">New Password</label>
+                                    <label htmlFor="pass"><VpnKeyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> New Password</label>
                                     <input
                                         type="password"
                                         name="pass"
@@ -346,7 +360,7 @@ const EditProfile = () => {
                                     />
                                 </div>
                                 <div className="edit-profile-group">
-                                    <label htmlFor="re_pass">Confirm Password</label>
+                                    <label htmlFor="re_pass"><VpnKeyIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} /> Confirm Password</label>
                                     <input
                                         type="password"
                                         name="re_pass"

@@ -1,10 +1,10 @@
 import "./SignUtils/CSS/Sign.css"
 import "./SignUtils/CSS/style.css.map"
-import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
+// import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/signin-image.jpg"
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Nav_bar from "../Navbar/Navbar";
+import Navbar from "../Navbar/Navbar";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -362,7 +362,7 @@ const Login = () => {
 
     return (
         <div >
-            <Nav_bar />
+            <Navbar />
             <section className="sign-in">
                 <div className="container">
                     <p>Login with your Student ID or Email and OTP/Password</p>

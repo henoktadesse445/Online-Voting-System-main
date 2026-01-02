@@ -61,6 +61,7 @@ const CandidateRegister = () => {
         image: null,
         symbol: null,
         authenticatedDocument: null,
+        position: '',
     });
 
     const handleChange = (e) => {
@@ -92,8 +93,12 @@ const CandidateRegister = () => {
 
         // CGPA validation removed - no longer required
 
-        // Position will be automatically assigned based on vote totals after election ends
-        // No need to validate position selection
+        // Validate position selection
+        if (!formData.position) {
+            CreationFailed('Please select a position you are running for.');
+            setLoading(false);
+            return;
+        }
 
         // Validate authenticated document is required
         if (!formData.authenticatedDocument) {
@@ -115,7 +120,7 @@ const CandidateRegister = () => {
         formDataToSend.append('bio', formData.bio);
         // CGPA field removed - no longer required
         // Position will be auto-assigned after election based on vote totals
-        // formDataToSend.append('position', formData.position);
+        formDataToSend.append('position', formData.position);
         formDataToSend.append('userId', userId);
 
         // Add files if provided
@@ -225,10 +230,26 @@ const CandidateRegister = () => {
                                     </>
                                 )}
 
-                                <div className="info-box primary">
-                                    <p>
-                                        <strong>Position Assignment:</strong> Positions will be automatically assigned after the election ends based on the total number of votes you receive.
-                                    </p>
+                                <div className="form-field required-field">
+                                    <label htmlFor="position">Position You Are Running For <span className="required">*</span></label>
+                                    <select
+                                        name="position"
+                                        id="position"
+                                        value={formData.position}
+                                        onChange={handleChange}
+                                        required
+                                        className="form-select"
+                                    >
+                                        <option value="">-- Select Position --</option>
+                                        <option value="President">President</option>
+                                        <option value="Vice President">Vice President</option>
+                                        <option value="Secretary">Secretary</option>
+                                        <option value="Finance Officer">Finance Officer</option>
+                                        <option value="Public Relations Officer">Public Relations Officer</option>
+                                        <option value="Sports & Recreation Officer">Sports & Recreation Officer</option>
+                                        <option value="Gender and Equality Officer">Gender and Equality Officer</option>
+                                    </select>
+                                    <small>Select the student union position you wish to run for</small>
                                 </div>
 
                                 <div className="form-field">

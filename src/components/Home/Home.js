@@ -1,4 +1,4 @@
-import Nav_bar from "../Navbar/Navbar"
+import Navbar from "../Navbar/Navbar"
 import './CSS/home.css'
 import BackgroundSlider from "./BackgroundSlider"
 import About from "./About"
@@ -12,14 +12,14 @@ const Home = () => {
     return (
         <div className="Home" >
             <div className="Home-content">
-            <Nav_bar />
-            <BackgroundSlider/>
-            <About/>
-            <Features/>
-            <Team/>
-            <FAQ/>
-            <UpcomingFeatures/>
-            <Contact/>
+                <Navbar />
+                <BackgroundSlider />
+                <About />
+                <Features />
+                <Team />
+                <FAQ />
+                <UpcomingFeatures />
+                <Contact />
             </div>
         </div>
     )

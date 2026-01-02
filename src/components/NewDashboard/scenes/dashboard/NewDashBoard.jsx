@@ -129,7 +129,7 @@ const NewDashboard = () => {
     // Fetch dashboard statistics
     useEffect(() => {
         setLoading(true);
-        axios.get(`${BASE_URL}/getDashboardData?t=${new Date().getTime()}`)
+        axios.get(`${BASE_URL}/getDashboardData`)
             .then((response) => {
                 const cardData = response.data.DashboardData;
                 setData({
@@ -155,7 +155,7 @@ const NewDashboard = () => {
     }, []);
     // Fetch candidates with cache-busting
     useEffect(() => {
-        axios.get(`${BASE_URL}/getCandidate?t=${new Date().getTime()}`)
+        axios.get(`${BASE_URL}/getCandidate`)
             .then((response) => {
                 // Sort candidates by votes in descending order
                 const sortedCandidates = response.data.candidate.sort((a, b) => {

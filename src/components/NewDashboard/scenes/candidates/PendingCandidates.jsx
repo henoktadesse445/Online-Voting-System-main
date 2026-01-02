@@ -2,22 +2,18 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, useTheme, Button, Chip, Avatar, Tooltip, IconButton } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
-import { CssBaseline, ThemeProvider } from "@mui/material";
-import { ColorModeContext, useMode } from "../../theme";
+import Header from "../../newComponents/Header";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DescriptionIcon from "@mui/icons-material/Description";
 import RefreshIcon from '@mui/icons-material/Refresh';
-import Header from "../../newComponents/Header";
-import Topbar from "../global/Topbar";
-import Sidebar from "../global/Sidebar";
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const PendingCandidates = () => {
-    const [theme, colorMode] = useMode();
+    const theme = useTheme();
     const [pendingCandidates, setPendingCandidates] = useState([]);
     const [loading, setLoading] = useState(false);
     const colors = tokens(theme.palette.mode);
@@ -163,6 +159,23 @@ const PendingCandidates = () => {
                 <Typography variant="body2" color={colors.grey[100]}>
                     {department || 'N/A'}
                 </Typography>
+            ),
+        },
+        {
+            field: "position",
+            headerName: "POSITION",
+            flex: 1,
+            minWidth: 150,
+            renderCell: ({ row: { position } }) => (
+                <Chip
+                    label={position || 'Not Assigned'}
+                    size="small"
+                    sx={{
+                        backgroundColor: position ? colors.greenAccent[700] : colors.grey[700],
+                        color: colors.grey[100],
+                        fontWeight: 'bold',
+                    }}
+                />
             ),
         },
         {
@@ -378,121 +391,112 @@ const PendingCandidates = () => {
     ];
 
     return (
-        <ColorModeContext.Provider value={colorMode}>
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                <div className="appNew">
-                    <Sidebar />
-                    <main className="content">
-                        <Topbar />
-                        <ToastContainer position="top-right" autoClose={3000} />
-                        <Box m="0px 20px">
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb="10px">
-                                <Header
-                                    title="PENDING CANDIDATE APPLICATIONS"
-                                    subtitle="Review and approve candidate registrations"
-                                />
-                                <IconButton
-                                    onClick={fetchPendingCandidates}
-                                    disabled={loading}
-                                    sx={{
-                                        backgroundColor: colors.blueAccent[700],
-                                        color: colors.grey[100],
-                                        '&:hover': {
-                                            backgroundColor: colors.blueAccent[600],
-                                        },
-                                        '&:disabled': {
-                                            backgroundColor: colors.grey[800],
-                                            color: colors.grey[600],
-                                        }
-                                    }}
-                                    title="Refresh pending applications"
-                                >
-                                    <RefreshIcon />
-                                </IconButton>
-                            </Box>
-                            <Box
-                                m="20px 0 0 0"
-                                height="72vh"
-                                sx={{
-                                    "& .MuiDataGrid-root": {
-                                        border: "none",
-                                        borderRadius: "16px",
-                                        overflow: "hidden",
-                                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                                    },
-                                    "& .MuiDataGrid-cell": {
-                                        borderBottom: `1px solid ${colors.primary[500]}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    },
-                                    "& .name-column--cell": {
-                                        color: colors.greenAccent[300],
-                                        fontWeight: "600",
-                                    },
-                                    "& .MuiDataGrid-columnHeaders": {
-                                        backgroundColor: colors.blueAccent[700],
-                                        borderBottom: "none",
-                                        fontSize: "13px",
-                                        fontWeight: "bold",
-                                    },
-                                    "& .MuiDataGrid-virtualScroller": {
-                                        backgroundColor: colors.primary[400],
-                                    },
-                                    "& .MuiDataGrid-footerContainer": {
-                                        borderTop: "none",
-                                        backgroundColor: colors.blueAccent[700],
-                                    },
-                                    "& .MuiCheckbox-root": {
-                                        color: `${colors.greenAccent[200]} !important`,
-                                    },
-                                    "& .MuiDataGrid-row:hover": {
-                                        backgroundColor: "rgba(104, 112, 250, 0.05)",
-                                    },
-                                }}
-                            >
-                                {pendingCandidates.length === 0 && !loading ? (
-                                    <Box
-                                        display="flex"
-                                        justifyContent="center"
-                                        alignItems="center"
-                                        height="100%"
-                                        flexDirection="column"
-                                        sx={{
-                                            backgroundColor: colors.primary[400],
-                                            borderRadius: "16px",
-                                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                                        }}
-                                    >
-                                        <Typography variant="h3" color={colors.grey[300]} fontWeight="bold">
-                                            No Pending Applications
-                                        </Typography>
-                                        <Typography variant="h6" color={colors.grey[500]} sx={{ mt: 2 }}>
-                                            All candidate applications have been reviewed.
-                                        </Typography>
-                                    </Box>
-                                ) : (
-                                    <DataGrid
-                                        rows={pendingCandidates}
-                                        columns={columns}
-                                        getRowId={(row) => row._id}
-                                        loading={loading}
-                                        disableRowSelectionOnClick
-                                        initialState={{
-                                            pagination: {
-                                                paginationModel: { pageSize: 10 },
-                                            },
-                                        }}
-                                        pageSizeOptions={[5, 10, 25, 50]}
-                                        rowHeight={70}
-                                    />
-                                )}
-                            </Box>
+        <>
+            <ToastContainer position="top-right" autoClose={3000} />
+            <Box m="0px 20px">
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb="10px">
+                    <Header
+                        title="PENDING CANDIDATE APPLICATIONS"
+                        subtitle="Review and approve candidate registrations"
+                    />
+                    <IconButton
+                        onClick={fetchPendingCandidates}
+                        disabled={loading}
+                        sx={{
+                            backgroundColor: colors.blueAccent[700],
+                            color: colors.grey[100],
+                            '&:hover': {
+                                backgroundColor: colors.blueAccent[600],
+                            },
+                            '&:disabled': {
+                                backgroundColor: colors.grey[800],
+                                color: colors.grey[600],
+                            }
+                        }}
+                        title="Refresh pending applications"
+                    >
+                        <RefreshIcon />
+                    </IconButton>
+                </Box>
+                <Box
+                    m="20px 0 0 0"
+                    height="72vh"
+                    sx={{
+                        "& .MuiDataGrid-root": {
+                            border: "none",
+                            borderRadius: "16px",
+                            overflow: "hidden",
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                        },
+                        "& .MuiDataGrid-cell": {
+                            borderBottom: `1px solid ${colors.primary[500]}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                        },
+                        "& .name-column--cell": {
+                            color: colors.greenAccent[300],
+                            fontWeight: "600",
+                        },
+                        "& .MuiDataGrid-columnHeaders": {
+                            backgroundColor: colors.blueAccent[700],
+                            borderBottom: "none",
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                        },
+                        "& .MuiDataGrid-virtualScroller": {
+                            backgroundColor: colors.primary[400],
+                        },
+                        "& .MuiDataGrid-footerContainer": {
+                            borderTop: "none",
+                            backgroundColor: colors.blueAccent[700],
+                        },
+                        "& .MuiCheckbox-root": {
+                            color: `${colors.greenAccent[200]} !important`,
+                        },
+                        "& .MuiDataGrid-row:hover": {
+                            backgroundColor: "rgba(104, 112, 250, 0.05)",
+                        },
+                    }}
+                >
+                    {pendingCandidates.length === 0 && !loading ? (
+                        <Box
+                            display="flex"
+                            justifyContent="center"
+                            alignItems="center"
+                            height="100%"
+                            flexDirection="column"
+                            sx={{
+                                backgroundColor: colors.primary[400],
+                                borderRadius: "16px",
+                                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                            }}
+                        >
+                            <Typography variant="h3" color={colors.grey[300]} fontWeight="bold">
+                                No Pending Applications
+                            </Typography>
+                            <Typography variant="h6" color={colors.grey[500]} sx={{ mt: 2 }}>
+                                All candidate applications have been reviewed.
+                            </Typography>
                         </Box>
-                    </main>
-                </div>
-            </ThemeProvider>
-        </ColorModeContext.Provider>
+                    ) : (
+                        <DataGrid
+                            rows={pendingCandidates}
+                            columns={columns}
+                            getRowId={(row) => row._id}
+                            loading={loading}
+                            disableRowSelectionOnClick
+                            initialState={{
+                                pagination: {
+                                    paginationModel: { pageSize: 10 },
+                                },
+                            }}
+                            pageSizeOptions={[5, 10, 25, 50]}
+                            rowHeight={70}
+                        />
+                    )}
+                </Box>
+            </Box>
+        </>
     );
 };
 

@@ -638,8 +638,7 @@ app.post("/createCandidate", upload.fields([
   try {
     const { fullName, party, bio, age, cgpa, position, userId } = req.body;
 
-    // Position is no longer set during registration - it will be auto-assigned after election
-    // based on vote totals (highest votes = President, 2nd = Vice President, etc.)
+    // Position is extracted from body and will be saved during registration
 
     // Build file URLs if uploaded
     const imageFile = req.files && req.files.image ? req.files.image[0] : null;
@@ -710,7 +709,7 @@ app.post("/createCandidate", upload.fields([
         bio,
         age: age ? parseInt(age) : undefined,
         cgpa: cgpa ? parseFloat(cgpa) : undefined,
-        // position: position || undefined, // Removed - will be auto-assigned after election
+        position: position || undefined,
         approvalStatus: "pending",
       };
 
@@ -845,10 +844,13 @@ app.get("/getCandidate", async (req, res) => {
     const candidate = await User.find({
       role: "candidate",
       approvalStatus: { $in: ["approved", null] } // Include null for backward compatibility
-    }).select("name party bio age cgpa role img symbol votes department position");
+    })
+      .select("name party bio age cgpa role img symbol votes department position")
+      .lean();
+
     // Map party to department for backwards compatibility
     const candidatesWithDepartment = candidate.map(c => ({
-      ...c.toObject(),
+      ...c,
       department: c.department || c.party || 'Not specified'
     }));
     res.json({ success: true, candidate: candidatesWithDepartment });
@@ -1245,7 +1247,7 @@ app.post("/api/admin/start-new-election", async (req, res) => {
 // 📜 Get Election History
 app.get("/api/admin/election-history", async (req, res) => {
   try {
-    const history = await ElectionResult.find().sort({ archivedAt: -1 });
+    const history = await ElectionResult.find().sort({ archivedAt: -1 }).lean();
     res.json({ success: true, history });
   } catch (err) {
     console.error(err);
@@ -1305,7 +1307,9 @@ app.get("/api/pendingCandidates", async (req, res) => {
     const pendingCandidates = await User.find({
       role: "candidate",
       approvalStatus: "pending"
-    }).select("name party bio age cgpa img symbol email createdAt voterId college department authenticatedDocument");
+    })
+      .select("name party bio age cgpa img symbol email createdAt voterId college department authenticatedDocument")
+      .lean();
 
     console.log(`✅ Found ${pendingCandidates.length} pending candidates`);
     res.json({ success: true, candidates: pendingCandidates });
@@ -1413,24 +1417,23 @@ app.post("/api/resetCandidateStatus/:id", async (req, res) => {
 app.get("/getDashboardData", async (req, res) => {
   try {
     // Prevent caching of dashboard data
+    // Prevent caching of dashboard data
     res.header("Cache-Control", "no-cache, no-store, must-revalidate");
     res.header("Pragma", "no-cache");
     res.header("Expires", "0");
-    // Count total eligible voters from StudentList (uploaded list)
-    const voterCount = await StudentList.countDocuments({});
 
-    // Count total candidates
-    // Count total candidates (Approved Only)
-    const candidateCount = await User.countDocuments({
-      role: "candidate",
-      approvalStatus: { $in: ["approved", null] } // Include null for backward compatibility
-    });
-
-    // Count voters who have voted (including candidates)
-    const votersVoted = await User.countDocuments({
-      role: { $in: ["voter", "candidate", undefined, null] },
-      voteStatus: true
-    });
+    // ⚡ Performance Optimization: Execute all counts in parallel using Promise.all
+    const [voterCount, candidateCount, votersVoted] = await Promise.all([
+      StudentList.countDocuments({}),
+      User.countDocuments({
+        role: "candidate",
+        approvalStatus: { $in: ["approved", null] }
+      }),
+      User.countDocuments({
+        role: { $in: ["voter", "candidate", undefined, null] },
+        voteStatus: true
+      })
+    ]);
 
     res.json({
       success: true,
@@ -2061,7 +2064,7 @@ app.post("/vote", async (req, res) => {
     console.log(`✅ Vote recorded: Voter ${voterId} voted for ${candidate.name}`);
     return res.json({
       success: true,
-      message: "Vote recorded successfully. Positions will be assigned after election ends based on vote totals.",
+      message: "Vote recorded successfully.",
     });
   } catch (err) {
     console.error("Error processing vote", err);
@@ -2510,11 +2513,13 @@ app.get("/api/studentList", async (req, res) => {
       ];
     }
 
-    const students = await StudentList.find(query)
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const totalCount = await StudentList.countDocuments(query);
+    const [students, totalCount] = await Promise.all([
+      StudentList.find(query)
+        .select("studentId name email status createdAt department cgpa") // Select only needed fields
+        .sort({ createdAt: -1 })
+        .lean(),
+      StudentList.countDocuments(query)
+    ]);
 
     res.json({
       success: true,

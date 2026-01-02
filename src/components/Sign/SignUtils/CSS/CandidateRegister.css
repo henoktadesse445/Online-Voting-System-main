@@ -162,7 +162,8 @@
     color: #e02424;
 }
 
-.form-field textarea {
+.form-field textarea,
+.form-field .form-select {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--border-color);
@@ -170,14 +171,18 @@
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     font-size: 1rem;
-    resize: vertical;
     transition: border-color 0.2s, box-shadow 0.2s;
     font-family: inherit;
     box-sizing: border-box;
     /* Important for padding */
 }
 
-.form-field textarea:focus {
+.form-field textarea {
+    resize: vertical;
+}
+
+.form-field textarea:focus,
+.form-field .form-select:focus {
     border-color: var(--accent-color);
     outline: none;
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
