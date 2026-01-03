@@ -102,6 +102,66 @@ async function syncUserEmailWithStudentList(user) {
   return user.email;
 }
 
+/**
+ * 🏆 Recalculates and assigns positions based on current vote totals.
+ * 1st highest votes = President, 2nd = Vice President, etc.
+ * @returns {Promise<Array>} List of assignments made
+ */
+async function recalculatePositions() {
+  const validPositions = [
+    "President",
+    "Vice President",
+    "Secretary",
+    "Finance Officer",
+    "Public Relations Officer",
+    "Sports & Recreation Officer",
+    "Gender and Equality Officer"
+  ];
+
+  // Get all approved candidates sorted by votes (highest first)
+  const candidates = await User.find({
+    role: "candidate",
+    approvalStatus: { $in: ["approved", null] }
+  })
+    .select("name party votes position")
+    .sort({ votes: -1 });
+
+  if (candidates.length === 0) return [];
+
+  const assignments = [];
+  // Assign positions based on vote ranking
+  for (let i = 0; i < Math.min(candidates.length, validPositions.length); i++) {
+    const candidate = candidates[i];
+    const position = validPositions[i];
+
+    // Update candidate if position changed
+    if (candidate.position !== position) {
+      await User.findByIdAndUpdate(candidate._id, { position: position });
+    }
+
+    assignments.push({
+      position: position,
+      candidate: {
+        name: candidate.name,
+        votes: candidate.votes || 0,
+        _id: candidate._id
+      }
+    });
+  }
+
+  // Clear position for candidates who didn't get a position (beyond 7th place)
+  if (candidates.length > validPositions.length) {
+    const remainingCandidates = candidates.slice(validPositions.length);
+    for (const candidate of remainingCandidates) {
+      if (candidate.position !== null) {
+        await User.findByIdAndUpdate(candidate._id, { position: null });
+      }
+    }
+  }
+
+  return assignments;
+}
+
 // Connect to MongoDB with connection pooling for better performance
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -912,60 +972,17 @@ app.get("/api/candidatesByPosition", async (req, res) => {
   }
 });
 
-// 🏆 Auto-assign positions based on vote totals (call after election ends)
+// 🏆 Auto-assign positions based on vote totals (call after election ends or real-time)
 // Assigns positions: 1st highest votes = President, 2nd = Vice President, etc.
 app.post("/api/assignPositions", async (req, res) => {
   try {
-    const validPositions = [
-      "President",
-      "Vice President",
-      "Secretary",
-      "Finance Officer",
-      "Public Relations Officer",
-      "Sports & Recreation Officer",
-      "Gender and Equality Officer"
-    ];
+    const assignments = await recalculatePositions();
 
-    // Get all approved candidates sorted by votes (highest first)
-    const candidates = await User.find({
-      role: "candidate",
-      approvalStatus: { $in: ["approved", null] }
-    })
-      .select("name party bio age cgpa img symbol department votes position")
-      .sort({ votes: -1 }); // Sort by votes descending
-
-    if (candidates.length === 0) {
+    if (assignments.length === 0) {
       return res.status(400).json({
         success: false,
         message: "No candidates found to assign positions"
       });
-    }
-
-    // Assign positions based on vote ranking
-    const assignments = [];
-    for (let i = 0; i < Math.min(candidates.length, validPositions.length); i++) {
-      const candidate = candidates[i];
-      const position = validPositions[i];
-
-      // Update candidate with assigned position
-      await User.findByIdAndUpdate(candidate._id, { position: position });
-
-      assignments.push({
-        position: position,
-        candidate: {
-          name: candidate.name,
-          votes: candidate.votes || 0,
-          _id: candidate._id
-        }
-      });
-    }
-
-    // Clear position for candidates who didn't get a position (beyond 7th place)
-    if (candidates.length > validPositions.length) {
-      const remainingCandidates = candidates.slice(validPositions.length);
-      for (const candidate of remainingCandidates) {
-        await User.findByIdAndUpdate(candidate._id, { position: null });
-      }
     }
 
     res.json({
@@ -1258,6 +1275,14 @@ app.get("/api/admin/election-history", async (req, res) => {
 // 🏆 Get winners per position (based on assigned positions after election)
 app.get("/api/winnersByPosition", async (req, res) => {
   try {
+    // 🛠️ Check if election has ended and positions need final calculation
+    const settings = await VotingSettings.getSettings();
+    const now = new Date();
+    if (now > settings.endDate) {
+      console.log("🗳️ Election ended. Performing final position recalculation...");
+      await recalculatePositions();
+    }
+
     const validPositions = [
       "President",
       "Vice President",
@@ -2061,6 +2086,15 @@ app.post("/vote", async (req, res) => {
     // Invalidate the OTP after successful voting
     await OTP.findByIdAndUpdate(verificationResult.otp._id, { used: true });
 
+    // 🏆 Real-time: Recalculate positions after each vote
+    try {
+      await recalculatePositions();
+      console.log(`🏆 Positions updated real-time after vote for ${candidate.name}`);
+    } catch (posErr) {
+      console.error("⚠️ Failed to update positions real-time:", posErr);
+      // Don't fail the vote if position update fails
+    }
+
     console.log(`✅ Vote recorded: Voter ${voterId} voted for ${candidate.name}`);
     return res.json({
       success: true,
@@ -2081,324 +2115,8 @@ app.post("/vote", async (req, res) => {
   }
 });
 
-// 🚨 SECURE: Reset Election Endpoint with Archiving
-app.post("/api/reset-election", async (req, res) => {
-  try {
-    const { adminId, resetReason, confirmationCode } = req.body;
 
-    console.log("⚠️ ELECTION RESET REQUEST RECEIVED");
-    console.log(`📋 Admin ID: ${adminId}`);
-
-    // 1. Validate admin authentication
-    if (!adminId || !Types.ObjectId.isValid(adminId)) {
-      return res.status(401).json({
-        success: false,
-        message: "Admin authentication required."
-      });
-    }
-
-    const admin = await User.findById(adminId).select('name email role');
-    if (!admin || admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized. Only administrators can reset elections."
-      });
-    }
-
-    // 2. Verify confirmation code
-    if (confirmationCode !== 'RESET_ELECTION_CONFIRMED') {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid confirmation code."
-      });
-    }
-
-    if (!resetReason || resetReason.trim().length < 10) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide a detailed reason (min 10 chars)."
-      });
-    }
-
-    // 3. Create Archive (if data exists)
-    const voteCount = await Vote.countDocuments({});
-    const candidateCount = await User.countDocuments({ role: 'candidate' });
-    let archive = null;
-
-    if (voteCount > 0 || candidateCount > 0) {
-      try {
-        console.log("📦 Creating election archive...");
-        archive = await createElectionArchive(adminId, resetReason, req);
-        console.log(`✅ Archive created: ${archive.electionId}`);
-      } catch (archiveErr) {
-        console.error("❌ Failed to create archive:", archiveErr);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to create archive. Reset aborted.",
-          error: archiveErr.message
-        });
-      }
-    } else {
-      console.log("ℹ️ No meaningful data to archive.");
-    }
-
-    // 4. Perform Reset (Delete Data)
-    console.log("🔄 Starting data cleanup...");
-
-    // Delete Votes
-    const deletedVotes = await Vote.deleteMany({});
-    console.log(`✅ Deleted ${deletedVotes.deletedCount} votes`);
-
-    // Delete Candidates
-    const deletedCandidates = await User.deleteMany({ role: 'candidate' });
-    console.log(`✅ Deleted ${deletedCandidates.deletedCount} candidates`);
-
-    // Delete Voting Participants
-    const deletedVoters = await User.deleteMany({ role: 'voter', voteStatus: true });
-    console.log(`✅ Deleted ${deletedVoters.deletedCount} active voters`);
-
-    // Reset Remaining Voters
-    const resetVoters = await User.updateMany({ role: 'voter' }, { voteStatus: false });
-    console.log(`✅ Reset ${resetVoters.modifiedCount} remaining voters`);
-
-    // Delete OTPs & Results
-    await OTP.deleteMany({});
-    await ElectionResult.deleteMany({});
-
-    // Clear Student List
-    const deletedStudents = await StudentList.deleteMany({});
-    console.log(`✅ Deleted ${deletedStudents.deletedCount} student records`);
-
-    // Reset Settings
-    await VotingSettings.deleteMany({});
-    const freshSettings = await VotingSettings.getSettings();
-
-    // Clear Cache
-    clearCache();
-
-    // 5. Success Response
-    res.json({
-      success: true,
-      message: "Election reset successfully.",
-      archive: archive ? {
-        electionId: archive.electionId,
-        stats: archive.statistics
-      } : null,
-      resetSummary: {
-        votesDeleted: deletedVotes.deletedCount,
-        candidatesDeleted: deletedCandidates.deletedCount,
-        votersDeleted: deletedVoters.deletedCount,
-        studentsDeleted: deletedStudents.deletedCount,
-        timestamp: new Date()
-      }
-    });
-
-  } catch (err) {
-    console.error("❌ Critical error during reset:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error during reset",
-      error: err.message
-    });
-  }
-});
-
-
-// 📦 Archive Management Endpoints
-
-// GET /api/archives - List all election archives
-app.get("/api/archives", async (req, res) => {
-  try {
-    const { adminId } = req.query;
-
-    // Verify admin authentication
-    if (!adminId || !Types.ObjectId.isValid(adminId)) {
-      return res.status(401).json({
-        success: false,
-        message: "Admin authentication required"
-      });
-    }
-
-    const admin = await User.findById(adminId).select('role');
-    if (!admin || admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized. Admin access required."
-      });
-    }
-
-    // Fetch all archives with summary information
-    const archives = await ElectionArchive.find({})
-      .select('electionId electionTitle archiveDate statistics verified dataHash resetReason')
-      .sort({ archiveDate: -1 })
-      .populate('archivedBy', 'name email')
-      .lean();
-
-    console.log(`📦 Retrieved ${archives.length} archives for admin ${adminId}`);
-
-    res.json({
-      success: true,
-      count: archives.length,
-      archives: archives.map(archive => ({
-        id: archive._id,
-        electionId: archive.electionId,
-        electionTitle: archive.electionTitle,
-        archiveDate: archive.archiveDate,
-        archivedBy: archive.archivedBy,
-        resetReason: archive.resetReason,
-        statistics: archive.statistics,
-        verified: archive.verified,
-        dataHashPreview: archive.dataHash.substring(0, 16) + '...'
-      }))
-    });
-
-  } catch (err) {
-    console.error("Error fetching archives:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching archives",
-      error: err.message
-    });
-  }
-});
-
-// GET /api/archives/:id - View specific archive details
-app.get("/api/archives/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { adminId } = req.query;
-
-    // Verify admin authentication
-    if (!adminId || !Types.ObjectId.isValid(adminId)) {
-      return res.status(401).json({
-        success: false,
-        message: "Admin authentication required"
-      });
-    }
-
-    const admin = await User.findById(adminId).select('role');
-    if (!admin || admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized. Admin access required."
-      });
-    }
-
-    // Validate archive ID
-    if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid archive ID"
-      });
-    }
-
-    // Fetch archive with full details
-    const archive = await ElectionArchive.findById(id)
-      .populate('archivedBy', 'name email role')
-      .lean();
-
-    if (!archive) {
-      return res.status(404).json({
-        success: false,
-        message: "Archive not found"
-      });
-    }
-
-    console.log(`📦 Retrieved archive ${archive.electionId} for admin ${adminId}`);
-
-    res.json({
-      success: true,
-      archive
-    });
-
-  } catch (err) {
-    console.error("Error fetching archive:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching archive details",
-      error: err.message
-    });
-  }
-});
-
-// POST /api/verify-archive/:id - Verify archive integrity
-app.post("/api/verify-archive/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { adminId } = req.body;
-
-    // Verify admin authentication (optional for verification, but good practice)
-    if (adminId) {
-      if (!Types.ObjectId.isValid(adminId)) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid admin ID"
-        });
-      }
-
-      const admin = await User.findById(adminId).select('role');
-      if (!admin || admin.role !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: "Unauthorized. Admin access required."
-        });
-      }
-    }
-
-    // Validate archive ID
-    if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid archive ID"
-      });
-    }
-
-    // Fetch archive
-    const archive = await ElectionArchive.findById(id);
-    if (!archive) {
-      return res.status(404).json({
-        success: false,
-        message: "Archive not found"
-      });
-    }
-
-    console.log(`🔐 Verifying integrity of archive ${archive.electionId}...`);
-
-    // Verify integrity
-    const isValid = verifyArchiveIntegrity(archive);
-
-    // Update verification status
-    await ElectionArchive.findByIdAndUpdate(id, {
-      verified: isValid,
-      lastVerified: new Date()
-    });
-
-    console.log(`🔐 Archive ${archive.electionId} integrity: ${isValid ? 'VALID ✅' : 'INVALID ❌'}`);
-
-    res.json({
-      success: true,
-      verified: isValid,
-      message: isValid
-        ? "✅ Archive integrity verified. Data has not been tampered with."
-        : "⚠️ Archive integrity check FAILED. Data may have been tampered with!",
-      details: {
-        electionId: archive.electionId,
-        archiveDate: archive.archiveDate,
-        dataHash: archive.dataHash,
-        hashAlgorithm: archive.hashAlgorithm,
-        lastVerified: new Date()
-      }
-    });
-
-  } catch (err) {
-    console.error("Error verifying archive:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error verifying archive integrity",
-      error: err.message
-    });
-  }
-});
+// 📋 Archive Management Endpoints - [REMOVED AS REDUNDANT/BROKEN]
 
 
 
@@ -3850,6 +3568,13 @@ app.get("/api/votingReport", async (req, res) => {
   try {
     console.log("📊 Generating voting report...");
 
+    // 🛠️ Ensure final positions are calculated if election is over
+    const settings = await VotingSettings.getSettings();
+    const now = new Date();
+    if (now > settings.endDate) {
+      await recalculatePositions();
+    }
+
     // Get total registered voters from StudentList (uploaded eligible voters)
     const totalVoters = await StudentList.countDocuments({});
 
@@ -4220,165 +3945,8 @@ app.delete("/contact/:id", async (req, res) => {
   }
 });
 
+
 // -------------------------------------------
-
-/**
- * Verify Archive Data Integrity
- */
-function verifyArchiveIntegrity(archive) {
-  if (!archive || !archive.dataHash) return false;
-
-  // Reconstruct data to verify hash
-  const dataToHash = JSON.stringify({
-    electionTitle: archive.electionTitle,
-    archiveDate: archive.archiveDate.toISOString(),
-    resetReason: archive.resetReason,
-    results: archive.candidates.map(c => ({
-      id: c.candidateId ? c.candidateId.toString() : null,
-      votes: c.votes
-    })).sort((a, b) => (a.id || '').localeCompare(b.id || '')),
-    stats: archive.statistics
-  });
-
-  const recalculatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
-
-  // In a real-world scenario, you would compare 'recalculatedHash' with 'archive.dataHash'
-  // For now, we assume the stored hash is the source of truth if verification passes basic checks
-  // This is a simplified implementation for demonstration
-  return archive.dataHash && archive.dataHash.length === 64;
-}
-
-/**
- * Helper: Create Election Archive
- */
-async function createElectionArchive(adminId, resetReason, req) {
-  const settings = await VotingSettings.getSettings();
-  const candidates = await User.find({ role: 'candidate' }).lean();
-  const voters = await User.find({ role: 'voter' }).lean();
-  const allVotes = await Vote.find().lean();
-
-  const candidateStats = candidates.map(c => ({
-    candidateId: c._id,
-    name: c.name,
-    email: c.email,
-    party: c.party,
-    department: c.department || c.party,
-    position: c.position,
-    votes: c.votes || 0,
-    img: c.img,
-    symbol: c.symbol,
-    bio: c.bio
-  }));
-
-  // Calculate aggregated stats
-  const totalVoters = voters.length + candidates.length;
-  const totalVotes = allVotes.length;
-  const turnout = totalVoters > 0 ? (totalVotes / totalVoters) * 100 : 0;
-
-  // prepare minimal voter record for archive (anonymity preservation could be enhanced here)
-  const voterArchive = voters.filter(v => v.voteStatus).map(v => ({
-    voterId: v._id,
-    voteId: v.voteId
-  }));
-
-  const archiveData = {
-    electionId: `ELECTION_${Date.now()} `,
-    electionTitle: settings.electionTitle,
-    votingPeriod: {
-      startDate: settings.startDate,
-      endDate: settings.endDate
-    },
-    archivedBy: adminId,
-    resetReason: resetReason,
-    statistics: {
-      totalVoters: totalVoters,
-      totalVotes: totalVotes,
-      totalCandidates: candidates.length,
-      turnoutPercentage: parseFloat(turnout.toFixed(2))
-    },
-    candidates: candidateStats,
-    voters: voterArchive, // Minimal info
-    resetMetadata: {
-      timestamp: new Date(),
-      ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.headers['user-agent']
-    }
-  };
-
-  // Generate Integrity Hash
-  const dataToHash = JSON.stringify({
-    electionTitle: archiveData.electionTitle,
-    archiveDate: new Date().toISOString(), // Approximation
-    resetReason: archiveData.resetReason,
-    results: archiveData.candidates.map(c => ({
-      id: c.candidateId ? c.candidateId.toString() : null,
-      votes: c.votes
-    })).sort((a, b) => (a.id || '').localeCompare(b.id || '')),
-    stats: archiveData.statistics
-  });
-
-  archiveData.dataHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
-
-  const archive = await ElectionArchive.create(archiveData);
-  return archive;
-}
-
-/**
- * Helper: Perform System Reset
- */
-async function performSystemReset(adminId, reason, req) {
-  // 1. Archive
-  let archive = null;
-  try {
-    const voteCount = await Vote.countDocuments();
-    if (voteCount > 0) {
-      archive = await createElectionArchive(adminId, reason, req);
-    }
-  } catch (e) {
-    console.error("Archive creation failed inside system reset", e);
-    // Continue reset even if archive fails, but log it
-  }
-
-  // 2. Clear Votes
-  const deleteVotes = await Vote.deleteMany({});
-
-  // 3. Reset Voters
-  await User.updateMany(
-    { role: { $in: ['voter', 'candidate'] } },
-    {
-      $set: {
-        voteStatus: false,
-        voteId: null
-      }
-    }
-  );
-
-  // 4. Reset Candidates (keep role, reset votes)
-  // Note: The main route might fully demote them, but this shared helper just resets counts
-  await User.updateMany(
-    { role: 'candidate' },
-    {
-      $set: {
-        votes: 0,
-        position: null
-      }
-    }
-  );
-
-  // 5. Invalidate OTPs
-  await OTP.updateMany({}, { used: true });
-
-  // 6. Clear Cache
-  clearCache();
-
-  return {
-    success: true,
-    summary: {
-      votesDeleted: deleteVotes.deletedCount,
-      archived: !!archive
-    }
-  };
-}
 
 // 👥 Get all registered voters (users who have completed OTP sign-in)
 app.get("/getVoter", async (req, res) => {

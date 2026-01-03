@@ -9,9 +9,11 @@ import {
   Paper,
   Box,
   Alert,
-  Divider
+  Divider,
+  useTheme
 } from '@mui/material';
 // import './CSS/user.css' // Removing custom CSS dependency
+import { tokens } from '../NewDashboard/theme';
 import UserCard from './Components/UserCard/userCard'
 import UpcomingElections from './Components/UpcomingElections';
 import ScrollReveal from "scrollreveal";
@@ -21,6 +23,8 @@ import Cookies from 'js-cookie';
 const User = () => {
   const location = useLocation();
   const { voterst } = location.state || {};
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
 
   // Set cookie if voter state is passed from login
   useEffect(() => {
@@ -63,12 +67,10 @@ const User = () => {
   }, []);
   const [singleVoter, setVoter] = useState([]);
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // If voter data is passed from login, use it immediately for faster display
     if (voterst && voterst.id && !voterid) {
-      setIsLoading(false);
       return;
     }
 
@@ -77,7 +79,6 @@ const User = () => {
       if (!voterst) {
         setError('Session not found. Please login again.');
       }
-      setIsLoading(false);
       return;
     }
 
@@ -96,12 +97,12 @@ const User = () => {
         setError('Failed to load voter information. Please try logging in again.');
       })
       .finally(() => {
-        setIsLoading(false);
+        // isLoading logic removed
       });
   }, [voterid, voterst]);
 
   return (
-    <div style={{ backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: theme.palette.background.default, minHeight: '100vh', transition: 'background-color 0.3s' }}>
       <UserNavbar />
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -112,8 +113,8 @@ const User = () => {
         )}
 
         <Box sx={{ textAlign: 'center', mb: 4 }} ref={revealRefTop}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#333' }}>
-            Welcome <span style={{ color: '#1976d2', fontWeight: 'bold' }}>{singleVoter.firstName || singleVoter.name}</span>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 700 }}>
+            Welcome <span style={{ color: colors.blueAccent[500], fontWeight: 'bold' }}>{singleVoter.firstName || singleVoter.name}</span>
           </Typography>
         </Box>
 
@@ -125,22 +126,22 @@ const User = () => {
 
           {/* Right Column: Welcome Message */}
           <Grid item xs={12} md={8} ref={revealRefRight}>
-            <Paper elevation={3} sx={{ p: 4, height: '100%', borderRadius: 2, backgroundColor: '#ffffff' }}>
-              <Typography variant="h4" gutterBottom sx={{ color: '#333' }}>
-                Welcome to <span style={{ color: '#1976d2', fontWeight: 'bold' }}>Online Voting Platform</span>
+            <Paper elevation={3} sx={{ p: 4, height: '100%', borderRadius: 2, backgroundColor: theme.palette.background.paper }}>
+              <Typography variant="h4" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 700 }}>
+                Welcome to <span style={{ color: colors.blueAccent[500], fontWeight: 'bold' }}>Online Voting Platform</span>
               </Typography>
-              <Typography variant="subtitle1" gutterBottom sx={{ color: '#555', fontStyle: 'italic', mb: 3 }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ color: theme.palette.text.secondary, fontStyle: 'italic', mb: 3 }}>
                 Exercise Your Right to Vote Anytime, Anywhere
               </Typography>
 
               <Divider sx={{ mb: 3 }} />
 
-              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: '#444', textAlign: 'justify' }}>
+              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: theme.palette.text.primary, textAlign: 'justify' }}>
                 Welcome to our online voting platform, where your voice matters. With the convenience of modern technology,
                 we bring democracy to your fingertips, enabling you to participate in important decisions and elections
                 from the comfort of your own home.
               </Typography>
-              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: '#444', textAlign: 'justify' }}>
+              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: theme.palette.text.primary, textAlign: 'justify' }}>
                 Our secure and user-friendly platform ensures that your vote is counted accurately and confidentially.
                 Whether it's electing your local representatives, deciding on community initiatives, or participating
                 in organizational polls, our platform empowers you to make a difference.

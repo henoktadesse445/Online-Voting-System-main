@@ -16,8 +16,6 @@ import {
     Typography,
     Grid,
     Chip,
-    Avatar,
-    Container,
     Button
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';

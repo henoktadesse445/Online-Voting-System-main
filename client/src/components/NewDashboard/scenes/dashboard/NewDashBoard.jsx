@@ -16,11 +16,13 @@ import "../../New.css"
 import axios from 'axios';
 import { BASE_URL } from '../../../../helper';
 import { toast } from 'react-toastify';
+import ConfirmationModal from "../../../common/ConfirmationModal";
 
 const NewDashboard = () => {
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0); // Key to force refresh
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
     const upcomingElections = [
         { id: '1', name: 'WCU Student President Election', date: '2025-12-01' },
     ];
@@ -37,49 +39,30 @@ const NewDashboard = () => {
         setRefreshKey(prev => prev + 1);
     };
 
-    // Function to start new election
-    const handleStartNewElection = async () => {
-        console.log("🔵 START NEW ELECTION BUTTON CLICKED");
+    // Function to trigger modal
+    const handleStartNewElection = () => {
+        setIsResetModalOpen(true);
+    };
 
-        // Single confirmation dialog
-        if (!window.confirm(
-            "⚠️ WARNING: This will DELETE ALL VOTES, CANDIDATES, and RESULTS.\n\n" +
-            "Student lists and admin accounts will be preserved.\n\n" +
-            "Are you sure you want to start a new election?"
-        )) {
-            console.log("🔴 User cancelled the operation");
-            return;
-        }
-
-        console.log("✅ User confirmed the operation");
-
+    // Function to execute reset after confirmation
+    const handleConfirmReset = async () => {
         try {
-            console.log("📦 Reading currentUser from localStorage...");
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            console.log("📦 currentUser:", currentUser);
 
             // Use stored admin ID if available, otherwise use fallback
             let adminId = currentUser?._id || "6766786c4f039103c8120e98";
 
             if (!currentUser) {
-                console.log("⚠️ No stored session found, using fallback admin ID");
+                // No stored session found
             }
-
-            console.log("🔑 Admin ID:", adminId);
-            console.log("🌐 BASE_URL:", BASE_URL);
-            console.log("🚀 Making POST request to:", `${BASE_URL}/api/admin/start-new-election`);
 
             const response = await axios.post(`${BASE_URL}/api/admin/start-new-election`, {
                 adminId: adminId,
                 confirmationCode: 'START_NEW_ELECTION'
             });
 
-            console.log("✅ Response received:", response);
-            console.log("📊 Response data:", response.data);
-
             if (response.data.success) {
                 const summary = response.data.summary;
-                console.log("🎉 SUCCESS! Summary:", summary);
 
                 toast.success(
                     `✅ New Election Started!\n\n` +
@@ -91,7 +74,6 @@ const NewDashboard = () => {
                 );
 
                 // Optimistically update UI immediately for better UX
-                console.log("🔄 Updating UI optimistically...");
                 setData({
                     voters: data.voters,
                     candidates: 0,
@@ -101,7 +83,6 @@ const NewDashboard = () => {
 
                 // Force refresh to get synced data from backend
                 setTimeout(() => {
-                    console.log("🔄 Refreshing dashboard data...");
                     handleRefresh();
                 }, 1000);
             } else {
@@ -409,6 +390,15 @@ const NewDashboard = () => {
                     </Box>
                 </Box>
             </Box>
+
+            <ConfirmationModal
+                open={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                onConfirm={handleConfirmReset}
+                title="Start New Election"
+                message="Are you sure you want to start a new election? This action will set up the system for a fresh voting cycle."
+                warning="WARNING: This will DELETE ALL current VOTES, CANDIDATES, and RESULTS. Student lists and admin accounts will be preserved."
+            />
         </div>
 
     )
