@@ -6,7 +6,6 @@ import { Link } from "react-router-dom";
 import { tokens } from "../../theme";
 import HomeoutlinedIcon from "@mui/icons-material/HomeOutlined";
 import ContactsOutlinedIcon from "@mui/icons-material/ContactsOutlined";
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import HomeIcon from '@mui/icons-material/Home';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
@@ -190,13 +189,6 @@ const Sidebar = () => {
                                 color: colors.grey[100],
                             }}
                         >
-                            <Item
-                                title="Calendar"
-                                to="/calendar"
-                                icon={<CalendarTodayOutlinedIcon />}
-                                selected={selected}
-                                setSelected={setSelected}
-                            />
                             <Item
                                 title="Voting Settings"
                                 to="/votingSettings"

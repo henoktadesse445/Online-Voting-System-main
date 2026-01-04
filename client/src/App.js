@@ -13,9 +13,6 @@ const ElectionResults = lazy(() => import('./components/User/Components/Results/
 const New = lazy(() => import('./components/NewDashboard/New'));
 const NewDashBoard = lazy(() => import('./components/NewDashboard/scenes/dashboard/NewDashBoard'));
 const NewCandidates = lazy(() => import('./components/NewDashboard/scenes/candidates/NewCandidates'));
-const Calendar = lazy(() => import('./components/NewDashboard/scenes/calendar/Calendar'));
-const Line = lazy(() => import('./components/NewDashboard/scenes/line/Line'));
-const Pie = lazy(() => import('./components/NewDashboard/scenes/pie/Pie'));
 const Result = lazy(() => import('./components/NewDashboard/scenes/result/Result'));
 const ContactMessages = lazy(() => import('./components/NewDashboard/scenes/contacts/ContactMessages'));
 const VotingSettings = lazy(() => import('./components/NewDashboard/scenes/settings/VotingSettings'));
@@ -38,10 +35,7 @@ const Routing = () => {
         <Route element={<New />}>
           <Route path="/Admin" element={<NewDashBoard />} />
           <Route path="/Candidate" element={<NewCandidates />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/LineChart" element={<Line />} />
           <Route path="/BarChart" element={<Result />} />
-          <Route path="/PieChart" element={<Pie />} />
           <Route path="/contacts" element={<ContactMessages />} />
           <Route path="/votingSettings" element={<VotingSettings />} />
           <Route path="/pendingCandidates" element={<PendingCandidates />} />
