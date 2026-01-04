@@ -38,8 +38,8 @@ Thumbs.db
 *.temp
 
 # Server uploads
-server/uploads/*
-!server/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
 
 # Certificates and keys
 *.pem
