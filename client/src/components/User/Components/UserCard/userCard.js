@@ -12,20 +12,16 @@ import {
     Chip,
     CircularProgress,
     IconButton,
-    Tooltip,
-    useTheme
+    Tooltip
 } from '@mui/material';
-import { tokens } from '../../../../components/NewDashboard/theme';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 // Default avatar image for users without a profile photo
-const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjYwIiBmaWxsPSIjOTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjxzdHlsZT4uc3R5bGUxe2ZvbnQtc2l6ZTo4MHB4fTwvc3R5bGU+PHRzcGFuIGNsYXNzPSJzdHlsZTEiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNDQ4IDUxMiIgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjOTk5Ij48cGF0aCBkPSJNMjI0IDI1NmMtNzAuNyAwLTEyOC01Ny4zLTEyOC0xMjhTMTUzLjMgMCAyMjQgMHMxMjggNTcuMyAxMjggMTI4LTU3LjMgMTI4LTEyOCAxMjh6bTg5LjYgMzJoLTE5LjJjLTIwLjIgMTAtNDMuNCAxNi03NjQgMTYtMzEuNSAwLTU2LjItNi05NS40LTE2aC0xOS4yQzU3LjMgMjg4IDAgMzQ1LjMgMCA0MTYuMlY0MzJjMCA0NC4xIDM1LjkgODAgODAgODBoMjg4YzQ0LjEgMCA4MC0zNS45IDgwLTgwdi0xNi4yYzAtNzAuOS01Ni43LTEyOC0xMjh6Ii8+PC9zdmc+PC90c3Bhbj48L3RleHQ+PC9zdmc+';
+const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjYwIiBmaWxsPSIjOTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjxzdHlsZT4uc3R5bGUxe2ZvbnQtc2l6ZTo4MHB4fTwvc3R5bGU+PHRzcGFuIGNsYXNzPSJzdHlsZTEiPjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNDQ4IDUxMiIgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjOTk5Ij48cGF0aCBkPSJNMjI0IDI1NmMtNzAuNyAwLTEyOC01Ny4zLTEyOC0xMjhTMTUzLjMgMCAyMjQgMHMxMjggNTcuMyAxMjggMTI4LTU3LjMgMTI4LTEyOCAxMjh6bTg5LjYgMz廉lLTE5LjJjLTIwLjIgMTAtNDMuNCAxNi03NjQgMTYtMzEuNSAwLTU2LjItNi05NS40LTE2aC0xOS4yQzU3LjMgMjg4IDAgMzQ1LjMgMCA0MTYuMlY0MzJjMCA0NC4xIDM1LjkgODAgODAgODBoMjg4YzQ0LjEgMCA4MC0zNS45IDgwLTgwdi0xNi4yYzAtNzAuOS01Ni43LTEyOC0xMjh6Ii8+PC9zdmc+PC90c3Bhbj48L3RleHQ+PC9zdmc+';
 
 export default function UserCard({ voter, onPhotoUpdate }) {
-    const theme = useTheme();
-    const colors = tokens(theme.palette.mode);
     const [uploading, setUploading] = useState(false);
     const [currentPhotoUrl, setCurrentPhotoUrl] = useState(voter.img || voter.image);
     const fileInputRef = useRef(null);
@@ -98,12 +94,23 @@ export default function UserCard({ voter, onPhotoUpdate }) {
     };
 
     return (
-        <Card elevation={3} sx={{ borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2, backgroundColor: theme.palette.background.paper, transition: 'background-color 0.3s' }}>
+        <Card elevation={3} sx={{
+            borderRadius: 4,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            p: 2,
+            backgroundColor: 'var(--card-bg)',
+            backdropFilter: 'var(--backdrop-blur)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-lg)'
+        }}>
             <Box sx={{ position: 'relative', mt: 2, mb: 2 }}>
                 <Avatar
                     src={fullPhotoUrl}
                     alt={voter.name || 'User Profile'}
-                    sx={{ width: 150, height: 150, border: `4px solid ${theme.palette.background.paper}`, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    sx={{ width: 150, height: 150, border: '4px solid var(--bg-surface)', boxShadow: 'var(--shadow-md)' }}
                     imgProps={{ onError: (e) => { e.target.src = DEFAULT_AVATAR; } }}
                 />
                 <Tooltip title="Change Photo">
@@ -113,15 +120,16 @@ export default function UserCard({ voter, onPhotoUpdate }) {
                             position: 'absolute',
                             bottom: 5,
                             right: 5,
-                            backgroundColor: colors.blueAccent[500],
+                            backgroundColor: '#1976d2',
                             color: 'white',
-                            '&:hover': { backgroundColor: colors.blueAccent[600] }
+                            '&:hover': { backgroundColor: '#115293' }
                         }}
                         disabled={uploading}
                     >
                         {uploading ? <CircularProgress size={24} color="inherit" /> : <PhotoCamera />}
                     </IconButton>
                 </Tooltip>
+
             </Box>
 
             <input

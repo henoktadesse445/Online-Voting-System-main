@@ -9,11 +9,8 @@ import {
   Paper,
   Box,
   Alert,
-  Divider,
-  useTheme
+  Divider
 } from '@mui/material';
-// import './CSS/user.css' // Removing custom CSS dependency
-import { tokens } from '../NewDashboard/theme';
 import UserCard from './Components/UserCard/userCard'
 import UpcomingElections from './Components/UpcomingElections';
 import ScrollReveal from "scrollreveal";
@@ -23,8 +20,6 @@ import Cookies from 'js-cookie';
 const User = () => {
   const location = useLocation();
   const { voterst } = location.state || {};
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
 
   // Set cookie if voter state is passed from login
   useEffect(() => {
@@ -67,10 +62,12 @@ const User = () => {
   }, []);
   const [singleVoter, setVoter] = useState([]);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // If voter data is passed from login, use it immediately for faster display
     if (voterst && voterst.id && !voterid) {
+      setIsLoading(false);
       return;
     }
 
@@ -79,6 +76,7 @@ const User = () => {
       if (!voterst) {
         setError('Session not found. Please login again.');
       }
+      setIsLoading(false);
       return;
     }
 
@@ -97,51 +95,95 @@ const User = () => {
         setError('Failed to load voter information. Please try logging in again.');
       })
       .finally(() => {
-        // isLoading logic removed
+        setIsLoading(false);
       });
   }, [voterid, voterst]);
 
   return (
-    <div style={{ backgroundColor: theme.palette.background.default, minHeight: '100vh', transition: 'background-color 0.3s' }}>
+    <div style={{ backgroundColor: 'var(--bg-primary)', minHeight: '100vh', transition: 'all 0.3s ease' }}>
       <UserNavbar />
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth="lg" sx={{ mt: 6, mb: 6 }}>
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error} - <a href="/Login" style={{ color: 'inherit', textDecoration: 'underline' }}>Login</a>
+          <Alert severity="error" sx={{ mb: 4, borderRadius: 2 }}>
+            {error} - <a href="/Login" style={{ color: 'inherit', fontWeight: 'bold' }}>Login</a>
           </Alert>
         )}
 
-        <Box sx={{ textAlign: 'center', mb: 4 }} ref={revealRefTop}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 700 }}>
-            Welcome <span style={{ color: colors.blueAccent[500], fontWeight: 'bold' }}>{singleVoter.firstName || singleVoter.name}</span>
+        <Box sx={{
+          textAlign: 'center',
+          mb: 6,
+          py: 4,
+          background: 'var(--gradient-surface)',
+          borderRadius: 4,
+          boxShadow: 'var(--shadow-sm)'
+        }} ref={revealRefTop}>
+          <Typography variant="h3" component="h1" gutterBottom sx={{
+            fontWeight: 800,
+            background: 'var(--gradient-primary)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '-0.02em',
+            mb: 1
+          }}>
+            Welcome, {singleVoter.firstName || singleVoter.name}
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+            Ready to make your voice heard?
           </Typography>
         </Box>
 
         <Grid container spacing={4}>
           {/* Left Column: User Profile */}
           <Grid item xs={12} md={4} ref={revealRefLeft}>
-            <UserCard voter={singleVoter} />
+            <Box sx={{ height: '100%' }}>
+              <UserCard voter={singleVoter} />
+            </Box>
           </Grid>
 
           {/* Right Column: Welcome Message */}
           <Grid item xs={12} md={8} ref={revealRefRight}>
-            <Paper elevation={3} sx={{ p: 4, height: '100%', borderRadius: 2, backgroundColor: theme.palette.background.paper }}>
-              <Typography variant="h4" gutterBottom sx={{ color: theme.palette.text.primary, fontWeight: 700 }}>
-                Welcome to <span style={{ color: colors.blueAccent[500], fontWeight: 'bold' }}>Online Voting Platform</span>
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom sx={{ color: theme.palette.text.secondary, fontStyle: 'italic', mb: 3 }}>
-                Exercise Your Right to Vote Anytime, Anywhere
-              </Typography>
+            <Paper elevation={0} sx={{
+              p: 4,
+              height: '100%',
+              borderRadius: 4,
+              background: 'var(--card-bg)',
+              backdropFilter: 'var(--backdrop-blur)',
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--shadow-md)',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 'var(--shadow-xl)'
+              }
+            }}>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Welcome to <span style={{ color: 'var(--color-primary)' }}>Online Voting Platform</span>
+                </Typography>
+                <Typography variant="subtitle1" sx={{ color: 'var(--text-secondary)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span style={{ width: 40, height: 2, background: 'var(--color-primary)', display: 'block' }}></span>
+                  Exercise Your Right to Vote Anytime, Anywhere
+                </Typography>
+              </Box>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 3, borderColor: 'var(--border-color)' }} />
 
-              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: theme.palette.text.primary, textAlign: 'justify' }}>
+              <Typography variant="body1" paragraph sx={{
+                lineHeight: 1.8,
+                color: 'var(--text-muted)',
+                fontSize: '1.05rem',
+                mb: 2
+              }}>
                 Welcome to our online voting platform, where your voice matters. With the convenience of modern technology,
                 we bring democracy to your fingertips, enabling you to participate in important decisions and elections
                 from the comfort of your own home.
               </Typography>
-              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: theme.palette.text.primary, textAlign: 'justify' }}>
+              <Typography variant="body1" paragraph sx={{
+                lineHeight: 1.8,
+                color: 'var(--text-muted)',
+                fontSize: '1.05rem'
+              }}>
                 Our secure and user-friendly platform ensures that your vote is counted accurately and confidentially.
                 Whether it's electing your local representatives, deciding on community initiatives, or participating
                 in organizational polls, our platform empowers you to make a difference.
@@ -151,7 +193,9 @@ const User = () => {
 
           {/* Bottom Row: Upcoming Elections */}
           <Grid item xs={12} ref={revealRefBottom}>
-            <UpcomingElections voteStatus={singleVoter.voteStatus} />
+            <Box sx={{ mt: 2 }}>
+              <UpcomingElections voteStatus={singleVoter.voteStatus} />
+            </Box>
           </Grid>
         </Grid>
       </Container>

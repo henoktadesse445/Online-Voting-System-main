@@ -1,0 +1,223 @@
+.election-results-page {
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+.results-header {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.results-header h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.stat-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f8f9fa;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stat-box h4 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-box small {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.result-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.leader-card {
+    border: 3px solid #28a745;
+    background: linear-gradient(135deg, #fff 0%, #f0fff4 100%);
+}
+
+.rank-badge {
+    font-size: 2rem;
+    font-weight: bold;
+    min-width: 50px;
+    text-align: center;
+}
+
+.candidate-photo-container {
+    margin-right: 15px;
+}
+
+.candidate-photo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #007bff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.candidate-photo-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    border: 3px solid #667eea;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.candidate-name {
+    color: #2c3e50;
+    font-size: 1.2rem;
+}
+
+.vote-stats {
+    margin-top: 15px;
+}
+
+.votes-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leading-badge {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.results-footer {
+    margin-top: 40px;
+}
+
+.results-footer .card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .results-header h1 {
+        font-size: 2rem;
+    }
+
+    .stat-box {
+        padding: 15px 20px;
+    }
+
+    .stat-box h4 {
+        font-size: 1.5rem;
+    }
+
+    .candidate-photo,
+    .candidate-photo-placeholder {
+        width: 50px;
+        height: 50px;
+    }
+
+    .rank-badge {
+        font-size: 1.5rem;
+        min-width: 40px;
+    }
+}
+
+/* Animation for new data */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-card {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
