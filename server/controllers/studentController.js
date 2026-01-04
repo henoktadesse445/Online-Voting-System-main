@@ -35,12 +35,16 @@ exports.uploadStudentList = async (req, res) => {
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
             const keys = Object.keys(row);
-            let studentIdKey = keys.find(k => /^(student|voter).?id|id$/i.test(k));
-            let emailKey = keys.find(k => /^e.?mail$/i.test(k));
-            let nameKey = keys.find(k => /^name|full.?name$/i.test(k));
 
-            if (!studentIdKey || !nameKey) {
-                results.errors.push({ row: i + 2, error: "Missing ID or Name" });
+            // Robust key detection
+            const studentIdKey = keys.find(k => /^(student|voter).?id|id$/i.test(k));
+            const emailKey = keys.find(k => /^e.?mail$/i.test(k));
+            const nameKey = keys.find(k => /^name|full.?name$/i.test(k));
+            const firstNameKey = keys.find(k => /^first.?name$/i.test(k));
+            const lastNameKey = keys.find(k => /^last.?name$/i.test(k));
+
+            if (!studentIdKey) {
+                results.errors.push({ row: i + 2, error: "Missing ID" });
                 continue;
             }
 
@@ -50,10 +54,27 @@ exports.uploadStudentList = async (req, res) => {
                 continue;
             }
 
+            // Construct full name from what's available
+            let name = "";
+            if (nameKey) {
+                name = row[nameKey];
+            } else if (firstNameKey || lastNameKey) {
+                name = `${row[firstNameKey] || ""} ${row[lastNameKey] || ""}`.trim();
+            }
+
+            if (!name) {
+                results.errors.push({ row: i + 2, studentId, error: "Missing Name" });
+                continue;
+            }
+
+            const email = emailKey ? row[emailKey] : generateEmail(row[firstNameKey] || name.split(' ')[0], row[lastNameKey] || '', studentId);
+
+            // Payload includes all fields from the row (dynamic)
             const payload = {
+                ...row,
                 studentId,
-                name: row[nameKey],
-                email: emailKey ? row[emailKey] : generateEmail(row[nameKey].split(' ')[0], '', studentId),
+                name,
+                email,
                 status: 'active'
             };
 
