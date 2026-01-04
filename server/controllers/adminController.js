@@ -224,36 +224,55 @@ exports.getVotingReport = async (req, res) => {
 };
 
 exports.distributeOTPs = async (req, res) => {
+    console.log("🚀 Starting OTP distribution process...");
     try {
         const students = await StudentList.find({});
+        console.log(`📂 Found ${students.length} students in list.`);
+
         const results = { total: students.length, sent: 0, failed: 0, errors: [] };
 
-        if (students.length === 0) return res.json({ success: true, message: "No students", results });
+        if (students.length === 0) {
+            console.log("⚠️ No students found for distribution.");
+            return res.json({ success: true, message: "No students", results });
+        }
 
         const transporter = await createEmailTransporter();
+        console.log("📧 Email transporter created.");
 
         // Clear only voters (not admins or candidates)
+        console.log("🧹 Clearing existing voter accounts...");
         await User.deleteMany({ role: { $in: ['voter', undefined, null] } });
 
-        for (const student of students) {
+        // Process in small batches or use concurrency to avoid timeouts
+        // For now, let's stick to the loop but add progress logging
+        for (let i = 0; i < students.length; i++) {
+            const student = students[i];
+            console.log(`[${i + 1}/${students.length}] Processing student: ${student.studentId}`);
+
             try {
                 if (!student.email) {
+                    console.log(`❌ No email for student ${student.studentId}`);
                     results.failed++;
                     results.errors.push({ user: student.studentId, error: "No email" });
                     continue;
                 }
+
+                // Create user
+                const password = crypto.randomBytes(16).toString('hex');
+                const hashedPassword = await bcrypt.hash(password, 10);
 
                 let user = new User({
                     name: student.name,
                     email: student.email,
                     voterId: student.studentId,
                     role: 'voter',
-                    password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+                    password: hashedPassword,
                     voteStatus: false,
                     department: student.department
                 });
                 await user.save();
 
+                // Generate OTP
                 const otpCode = generateSecureOTP();
                 const hashedOTP = await hashOTP(otpCode);
 
@@ -262,29 +281,47 @@ exports.distributeOTPs = async (req, res) => {
                     {
                         code: hashedOTP,
                         email: user.email,
-                        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
                         used: false,
                         isPreElectionOTP: true
                     },
                     { upsert: true }
                 );
 
+                console.log(`📤 Sending email to ${student.email}...`);
                 await transporter.sendMail({
                     from: process.env.EMAIL_USER,
                     to: user.email,
-                    subject: 'Your Election Credentials',
-                    html: `<p>User: ${user.voterId}</p><p>OTP: <b>${otpCode}</b></p>`
+                    subject: 'WCU Online Voting - Your Election Credentials',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                            <h2 style="color: #2c3e50;">Welcome to WCU Online Voting</h2>
+                            <p>You have been registered for the upcoming election.</p>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                <p><strong>Student ID:</strong> ${user.voterId}</p>
+                                <p><strong>OTP Code:</strong> <span style="font-size: 20px; color: #3498db; letter-spacing: 2px;">${otpCode}</span></p>
+                            </div>
+                            <p style="color: #7f8c8d; font-size: 13px; margin-top: 20px;">
+                                Use these credentials to login for the first time. You will be asked to set a password after verification.
+                            </p>
+                        </div>
+                    `
                 });
 
                 results.sent++;
+                console.log(`✅ Success for ${student.studentId}`);
             } catch (innerErr) {
+                console.error(`❌ Failed for ${student.studentId}:`, innerErr.message);
                 results.failed++;
                 results.errors.push({ user: student.studentId, error: innerErr.message });
             }
         }
+
+        console.log(`🏁 Distribution complete. Sent: ${results.sent}, Failed: ${results.failed}`);
         res.json({ success: true, message: "Distribution complete", results });
     } catch (err) {
-        res.status(500).json({ success: false, message: "Error in distribution" });
+        console.error("🔥 CRITICAL ERROR in OTP distribution:", err);
+        res.status(500).json({ success: false, message: "Error in distribution", error: err.message });
     }
 };
 
