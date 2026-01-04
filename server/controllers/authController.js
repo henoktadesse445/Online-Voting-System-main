@@ -394,18 +394,35 @@ exports.resetPassword = async (req, res) => {
 exports.resendOTP = async (req, res) => {
     try {
         const { username } = req.body;
-        const query = username.includes("@") ? { email: username } : { voterId: username };
+        if (!username) return res.status(400).json({ success: false, message: "Username is required" });
+
+        const cleanedUsername = username.trim();
+        const isEmail = cleanedUsername.includes("@");
+        const normalizedUsername = isEmail ? cleanedUsername.toLowerCase() : cleanedUsername.toUpperCase();
+        const query = isEmail ? { email: normalizedUsername } : { voterId: normalizedUsername };
+
         const user = await User.findOne(query);
 
-        if (!user) return res.status(404).json({ success: false, message: "User not found" });
-        if (user.firstLoginCompleted) return res.status(400).json({ success: false, message: "User already registered" });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found. Please ensure you are a registered student." });
+        }
+
+        if (user.firstLoginCompleted) {
+            return res.status(400).json({ success: false, message: "Account already set up. Please use your password or Forgot Password." });
+        }
 
         const otpCode = generateSecureOTP();
         const hashedOTP = await hashOTP(otpCode);
 
+        // Keep Pre-Election OTP status
         await OTP.findOneAndUpdate(
-            { voterId: user._id },
-            { code: hashedOTP, email: user.email, expiresAt: new Date(Date.now() + 10 * 60 * 1000), used: false },
+            { voterId: user._id, isPreElectionOTP: true },
+            {
+                code: hashedOTP,
+                email: user.email,
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Long expiry for pre-election
+                used: false
+            },
             { upsert: true }
         );
 
@@ -413,12 +430,22 @@ exports.resendOTP = async (req, res) => {
         await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: user.email,
-            subject: 'Your Login OTP',
-            html: `<h1>${otpCode}</h1>`
+            subject: 'WCU Voting System - Your Login OTP',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                    <h2 style="color: #2c3e50;">Login Verification</h2>
+                    <p>Hello <strong>${user.name}</strong>,</p>
+                    <p>Your OTP for the Wachemo University Voting System is:</p>
+                    <h1 style="color: #3498db; letter-spacing: 5px;">${otpCode}</h1>
+                    <p>Use this code with your Student ID (<strong>${user.voterId}</strong>) to complete your first login.</p>
+                    <p style="color: #7f8c8d; font-size: 12px;">If you did not request this, please ignore this email.</p>
+                </div>
+            `
         });
 
-        res.json({ success: true, message: "OTP resent successfully" });
+        res.json({ success: true, message: "OTP resent successfully. Please check your email." });
     } catch (err) {
-        res.status(500).json({ success: false, message: "Error resending OTP" });
+        console.error("Resend OTP Error:", err);
+        res.status(500).json({ success: false, message: "Could not send OTP. Please check your internet or contact support." });
     }
 };

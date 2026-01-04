@@ -6,9 +6,21 @@ const XLSX = require('xlsx');
 
 const normalizeStudentId = (id) => {
     if (!id) return null;
-    id = String(id).trim().toUpperCase().replace(/^WCUR/, 'WCU');
-    const match = id.match(/^WCU(\d+)/);
+    let cleanId = String(id).trim().toUpperCase();
+
+    // Handle WCUR prefix
+    cleanId = cleanId.replace(/^WCUR/, 'WCU');
+
+    // If it's just numbers, add WCU prefix
+    if (/^\d+$/.test(cleanId)) {
+        cleanId = `WCU${cleanId}`;
+    }
+
+    // Match the WCU prefix and the number part
+    const match = cleanId.match(/^WCU(\d+)/);
     if (!match) return null;
+
+    // Normalize numbering to 7 digits (common for WCU IDs)
     const num = match[1].slice(0, 7).padStart(7, '0');
     return `WCU${num}`;
 };
