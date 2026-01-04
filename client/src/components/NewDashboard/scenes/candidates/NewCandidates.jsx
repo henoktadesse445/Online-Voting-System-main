@@ -5,7 +5,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
 import Header from "../../newComponents/Header";
 import RefreshIcon from '@mui/icons-material/Refresh';
-import axios from 'axios';
+import api from '../../../../api';
 import { BASE_URL } from '../../../../helper';
 
 const NewCandidates = () => {
@@ -17,7 +17,7 @@ const NewCandidates = () => {
     // Fetch candidates
     const fetchCandidates = () => {
         setLoading(true);
-        axios.get(`${BASE_URL}/getCandidate?t=${new Date().getTime()}`)
+        api.get(`/api/candidates/all?t=${new Date().getTime()}`)
             .then((response) => {
                 setCandidate(response.data.candidate || []);
                 setLoading(false);

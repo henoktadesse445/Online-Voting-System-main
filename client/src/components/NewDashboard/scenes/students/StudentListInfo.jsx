@@ -10,8 +10,7 @@ import SendIcon from "@mui/icons-material/Send";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 import { Card, CardContent, Grid, CircularProgress } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -56,8 +55,8 @@ const StudentListInfo = () => {
             const q = new URLSearchParams();
             if (status) q.append('status', status);
             if (search) q.append('search', search);
-            const url = `${BASE_URL}/api/studentList${q.toString() ? `?${q.toString()}` : ''}`;
-            const resp = await axios.get(url);
+            const url = `/api/students/all${q.toString() ? `?${q.toString()}` : ''}`;
+            const resp = await api.get(url);
 
             if (resp.data && resp.data.success) {
                 const studentData = resp.data.students || [];
@@ -116,7 +115,7 @@ const StudentListInfo = () => {
     const handleDeleteAll = async () => {
         setDeleteLoading(true);
         try {
-            const resp = await axios.delete(`${BASE_URL}/api/studentList`);
+            const resp = await api.delete(`/api/students/all`);
             if (resp.data && resp.data.success) {
                 alert(`Successfully deleted ${resp.data.deletedCount} students from the list.`);
                 setOpenDeleteDialog(false);
@@ -157,7 +156,7 @@ const StudentListInfo = () => {
             setUploadResult(null);
             const formData = new FormData();
             formData.append('file', file);
-            const resp = await axios.post(`${BASE_URL}/api/studentList/upload`, formData, {
+            const resp = await api.post(`/api/students/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             setUploadResult(resp.data);
@@ -193,7 +192,7 @@ const StudentListInfo = () => {
         setOpenOtpDialog(true); // Open dialog to show progress/results
 
         try {
-            const response = await axios.post(`${BASE_URL}/api/admin/distributeOTPs`);
+            const response = await api.post(`/api/admin/distribute-otps`);
 
             if (response.data.success) {
                 setOtpResult(response.data.results);

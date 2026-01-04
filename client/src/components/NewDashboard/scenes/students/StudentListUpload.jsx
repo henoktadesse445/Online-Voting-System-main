@@ -5,8 +5,7 @@ import { ColorModeContext, useMode, tokens } from '../../theme';
 import Header from '../../newComponents/Header';
 import Topbar from '../global/Topbar';
 import Sidebar from '../global/Sidebar';
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 
 const StudentListUpload = () => {
   const [theme, colorMode] = useMode();
@@ -34,7 +33,7 @@ const StudentListUpload = () => {
       setResult(null);
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await axios.post(`${BASE_URL}/api/studentList/upload`, formData, {
+      const resp = await api.post(`/api/students/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setResult(resp.data);

@@ -4,8 +4,7 @@ import "./SignUtils/CSS/CandidateRegister.css";
 import "./SignUtils/CSS/style.css.map"
 import { ToastContainer, toast } from 'react-toastify';
 import { useState, useEffect } from "react";
-import axios from "axios"
-import { BASE_URL } from "../../helper";
+import api from "../../api";
 import { useNavigate, Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import UserNavbar from "../Navbar/UserNavbar";
@@ -15,7 +14,7 @@ const CandidateRegister = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userId, setUserId] = useState(null);
     const [userInfo, setUserInfo] = useState(null);
-    const [loadingUserInfo, setLoadingUserInfo] = useState(true);
+
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [successText, setSuccessText] = useState("");
 
@@ -39,19 +38,15 @@ const CandidateRegister = () => {
             // Fetch user information from registration
             const fetchUserInfo = async () => {
                 try {
-                    const response = await axios.get(`${BASE_URL}/getVoterbyID/${voterId}`);
+                    const response = await api.get(`/api/voters/${voterId}`);
                     if (response.data.success && response.data.voter) {
                         setUserInfo(response.data.voter);
                     }
                 } catch (err) {
                     console.error('Error fetching user info:', err);
-                } finally {
-                    setLoadingUserInfo(false);
                 }
             };
             fetchUserInfo();
-        } else {
-            setLoadingUserInfo(false);
         }
     }, []);
 
@@ -129,7 +124,7 @@ const CandidateRegister = () => {
         formDataToSend.append('authenticatedDocument', formData.authenticatedDocument);
 
         try {
-            const response = await axios.post(`${BASE_URL}/createCandidate`, formDataToSend, {
+            const response = await api.post(`/api/candidates/register`, formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }

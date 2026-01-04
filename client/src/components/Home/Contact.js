@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './CSS/contact.css'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
+import api from '../../api';
 
 
 const Contact = () => {
@@ -16,7 +16,7 @@ const Contact = () => {
     const sendingSuccess = (msg) => toast.success(msg, {
         className: "toast-message",
     });
-    
+
     const sendingFailed = (msg) => toast.error(msg, {
         className: "toast-message",
     });
@@ -45,7 +45,7 @@ const Contact = () => {
         }
 
         try {
-            const response = await axios.post('/contact', {
+            const response = await api.post('/api/messages/contact', {
                 name,
                 email,
                 message

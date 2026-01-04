@@ -13,8 +13,7 @@ import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import Result from "../../newComponents/BarChart";
 import StatBox from "../../newComponents/StatBox";
 import "../../New.css"
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 import { toast } from 'react-toastify';
 import ConfirmationModal from "../../../common/ConfirmationModal";
 
@@ -56,20 +55,20 @@ const NewDashboard = () => {
                 // No stored session found
             }
 
-            const response = await axios.post(`${BASE_URL}/api/admin/start-new-election`, {
+            const response = await api.post(`/api/admin/start-new-election`, {
                 adminId: adminId,
                 confirmationCode: 'START_NEW_ELECTION'
             });
 
             if (response.data.success) {
-                const summary = response.data.summary;
+                const summary = response.data.summary || {};
 
                 toast.success(
                     `✅ New Election Started!\n\n` +
-                    `📊 ${summary.votesDeleted} votes cleared\n` +
-                    `👥 ${summary.candidatesDeleted} candidates removed\n` +
-                    `📝 ${summary.resultsDeleted} results cleared\n` +
-                    `🔄 ${summary.votersReset} voters reset`,
+                    `📊 ${summary.votesDeleted || 0} votes cleared\n` +
+                    `👥 ${summary.candidatesDeleted || 0} candidates removed\n` +
+                    `📝 ${summary.resultsDeleted || 0} results cleared\n` +
+                    `🔄 ${summary.votersReset || 0} voters reset`,
                     { autoClose: 5000 }
                 );
 
@@ -91,13 +90,6 @@ const NewDashboard = () => {
             }
         } catch (error) {
             console.error("❌❌❌ CRITICAL ERROR:", error);
-            console.error("Error details:", {
-                message: error.message,
-                response: error.response,
-                request: error.request,
-                config: error.config
-            });
-
             const errorMessage = error.response?.data?.message ||
                 error.response?.data?.error ||
                 error.message ||
@@ -110,7 +102,7 @@ const NewDashboard = () => {
     // Fetch dashboard statistics
     useEffect(() => {
         setLoading(true);
-        axios.get(`${BASE_URL}/getDashboardData`)
+        api.get(`/api/admin/dashboard-data`)
             .then((response) => {
                 const cardData = response.data.DashboardData;
                 setData({
@@ -136,7 +128,7 @@ const NewDashboard = () => {
     }, []);
     // Fetch candidates with cache-busting
     useEffect(() => {
-        axios.get(`${BASE_URL}/getCandidate`)
+        api.get(`/api/candidates/all`)
             .then((response) => {
                 // Sort candidates by votes in descending order
                 const sortedCandidates = response.data.candidate.sort((a, b) => {

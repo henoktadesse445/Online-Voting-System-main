@@ -2,8 +2,7 @@ import { ResponsivePie } from "@nivo/pie";
 import { tokens } from "../theme";
 import { useTheme } from "@mui/material";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { BASE_URL } from '../../../helper';
+import api from '../../../api';
 
 
 const VoterbyAge = () => {
@@ -49,7 +48,7 @@ const VoterbyAge = () => {
   useEffect(() => {
     const fetchVoterData = async () => {
       try {
-        const response = await axios.get(`${BASE_URL}/getVoter`); // Replace with your actual endpoint
+        const response = await api.get(`/api/voters/all`); // Replace with your actual endpoint
         const voterData = response.data.voter;
         const groupedData = groupVotersByAge(voterData);
         setAgeGroupData(groupedData);

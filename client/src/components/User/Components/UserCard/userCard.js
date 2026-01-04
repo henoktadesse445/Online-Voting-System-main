@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useRef } from 'react';
 import { BASE_URL } from '../../../../helper';
-import axios from 'axios';
+import api from '../../../../api';
 import Cookies from 'js-cookie';
 import {
     Card,
@@ -63,8 +63,8 @@ export default function UserCard({ voter, onPhotoUpdate }) {
             const formData = new FormData();
             formData.append('photo', file);
 
-            const response = await axios.post(
-                `${BASE_URL}/uploadVoterPhoto/${voterId}`,
+            const response = await api.post(
+                `/api/voters/upload-photo/${voterId}`,
                 formData,
                 {
                     headers: {

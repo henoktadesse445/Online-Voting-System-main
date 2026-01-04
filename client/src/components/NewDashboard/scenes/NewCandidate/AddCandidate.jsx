@@ -8,8 +8,7 @@ import { ColorModeContext, useMode } from "../../theme";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ToastContainer, toast } from 'react-toastify';
 import { useState } from "react";
-import axios from "axios"
-import { BASE_URL } from "../../../../helper";
+import api from "../../../../api";
 import { useNavigate } from 'react-router-dom';
 
 
@@ -67,7 +66,7 @@ const AddCandidate = () => {
 
 
         try {
-            const response = await axios.post(`${BASE_URL}/createCandidate`, formDataToSend, {
+            const response = await api.post(`/api/candidates/register`, formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }

@@ -3,13 +3,11 @@ import "./SignUtils/CSS/style.css.map"
 // import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/signin-image.jpg"
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from "../Navbar/Navbar";
-import axios from "axios";
-import { ToastContainer, toast } from 'react-toastify';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from 'react-router-dom';
-import { BASE_URL } from "../../helper";
+import Navbar from "../Navbar/Navbar";
+import api from "../../api";
 
 
 const Login = () => {
@@ -70,7 +68,7 @@ const Login = () => {
     const handleLogin = async () => {
         setLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/login`, {
+            const response = await api.post(`/api/auth/login`, {
                 username,
                 credential
             });
@@ -141,7 +139,7 @@ const Login = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/setPassword`, {
+            const response = await api.post(`/api/auth/setPassword`, {
                 userId,
                 newPassword,
                 confirmPassword
@@ -190,7 +188,7 @@ const Login = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/requestPasswordReset`, {
+            const response = await api.post(`/api/auth/request-reset`, {
                 username: resetUsername
             });
 
@@ -226,7 +224,7 @@ const Login = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/verifyResetOTP`, {
+            const response = await api.post(`/api/auth/verify-reset-otp`, {
                 username: resetUsername,
                 otp: resetOTP
             });
@@ -280,7 +278,7 @@ const Login = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/resetPassword`, {
+            const response = await api.post(`/api/auth/reset-password`, {
                 userId: resetUserId,
                 resetToken: resetToken,
                 newPassword: resetNewPassword,
@@ -337,7 +335,7 @@ const Login = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/resendOTP`, {
+            const response = await api.post(`/api/auth/resendOTP`, {
                 username: username
             });
 

@@ -3,12 +3,11 @@ import "./SignUtils/CSS/style.css.map"
 // import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/adminbanner.png"
 import { useState } from 'react';
-import Navbar from "../Navbar/Navbar";
-import axios from "axios";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
-import { BASE_URL } from "../../helper";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Navbar from "../Navbar/Navbar";
+import api from "../../api";
 
 
 const AdminLogin = () => {
@@ -30,7 +29,7 @@ const AdminLogin = () => {
         setLoading(true);
 
         try {
-            const response = await axios.post(`${BASE_URL}/adminlogin`, { username, password });
+            const response = await api.post(`/api/auth/adminlogin`, { username, password });
 
             if (response.data.success) {
                 // Store admin session data

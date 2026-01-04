@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, useTheme, Button, Chip, Avatar, Tooltip, IconButton } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
@@ -7,7 +7,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DescriptionIcon from "@mui/icons-material/Description";
 import RefreshIcon from '@mui/icons-material/Refresh';
-import axios from 'axios';
+import api from '../../../../api';
 import { BASE_URL } from '../../../../helper';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,18 +18,18 @@ const PendingCandidates = () => {
     const [loading, setLoading] = useState(false);
     const colors = tokens(theme.palette.mode);
 
-    const showSuccessToast = (message) => toast.success(message, {
+    const showSuccessToast = useCallback((message) => toast.success(message, {
         className: "toast-message",
-    });
+    }), []);
 
-    const showErrorToast = (message) => toast.error(message, {
+    const showErrorToast = useCallback((message) => toast.error(message, {
         className: "toast-message",
-    });
+    }), []);
 
-    const fetchPendingCandidates = async () => {
+    const fetchPendingCandidates = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${BASE_URL}/api/pendingCandidates?t=${new Date().getTime()}`);
+            const response = await api.get(`/api/candidates/pending?t=${new Date().getTime()}`);
             if (response.data.success) {
                 setPendingCandidates(response.data.candidates);
             }
@@ -39,15 +39,15 @@ const PendingCandidates = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showErrorToast]);
 
     useEffect(() => {
         fetchPendingCandidates();
-    }, []);
+    }, [fetchPendingCandidates]);
 
     const handleApprove = async (id, name) => {
         try {
-            const response = await axios.post(`${BASE_URL}/api/approveCandidate/${id}`);
+            const response = await api.post(`/api/candidates/approve/${id}`);
             if (response.data.success) {
                 showSuccessToast(`✅ ${name} has been approved!`);
                 fetchPendingCandidates();
@@ -65,7 +65,7 @@ const PendingCandidates = () => {
             return;
         }
         try {
-            const response = await axios.post(`${BASE_URL}/api/rejectCandidate/${id}`);
+            const response = await api.post(`/api/candidates/reject/${id}`);
             if (response.data.success) {
                 showSuccessToast(`❌ ${name} has been rejected.`);
                 fetchPendingCandidates();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../../api';
 import { BASE_URL } from '../../../../helper';
 import UserNavbar from '../../../Navbar/UserNavbar';
 import {
@@ -50,13 +50,13 @@ const ElectionResults = () => {
 
         try {
             // Fetch winners by position
-            const winnersResponse = await axios.get(`${BASE_URL}/api/winnersByPosition`);
+            const winnersResponse = await api.get(`/api/candidates/by-position`);
             if (winnersResponse.data.success) {
                 setWinnersByPosition(winnersResponse.data.winners);
             }
 
             // Also fetch all candidates for backward compatibility
-            const response = await axios.get(`${BASE_URL}/getCandidate`);
+            const response = await api.get(`/api/candidates/all`);
             const candidatesData = response.data.candidate;
 
             // Sort by votes (highest first)

@@ -3,8 +3,7 @@ import { ResponsiveBar } from "@nivo/bar";
 import { tokens } from "../theme";
 // import { mockBarData as data } from "../data/mockData";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { BASE_URL } from "../../../helper";
+import api from "../../../api";
 
 const BarChart = ({ isDashboard = false }) => {
   const theme = useTheme();
@@ -12,11 +11,11 @@ const BarChart = ({ isDashboard = false }) => {
 
   const [candidate, setCandidate] = useState([]);
   useEffect(() => {
-    axios.get(`${BASE_URL}/getCandidate`)
+    api.get(`/api/candidates/all`)
       .then((response) => setCandidate(response.data.candidate))
       .catch(err => console.error("Error fetching data: ", err));
   }, [])
-  
+
   // Map candidates to chart data with candidate names
   const data = candidate.map((candidated) => ({
     name: candidated.name || 'Unknown',
@@ -57,7 +56,7 @@ const BarChart = ({ isDashboard = false }) => {
         },
       }}
       keys={["votes"]}
-      indexBy="name"      
+      indexBy="name"
       margin={{ top: 50, right: 50, bottom: 50, left: 60 }}
       padding={0.5}
       valueScale={{ type: "linear" }}
@@ -87,7 +86,7 @@ const BarChart = ({ isDashboard = false }) => {
         from: "color",
         modifiers: [["darker", "1.6"]],
       }}
-      
+
       axisTop={null}
       axisRight={null}
       axisBottom={{

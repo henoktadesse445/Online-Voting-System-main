@@ -8,8 +8,7 @@ import Header from "../../newComponents/Header";
 import Topbar from "../global/Topbar";
 import Sidebar from "../global/Sidebar";
 import { Button } from '@mui/material';
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 import { toast } from 'react-toastify';
 
 const UpcomingElection = () => {
@@ -31,12 +30,12 @@ const UpcomingElection = () => {
     const fetchElections = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${BASE_URL}/api/votingSettings`);
+            const response = await api.get(`/api/voting/settings`);
             if (response.data.success) {
                 const settings = response.data.settings;
                 const startDate = new Date(settings.startDate);
                 const endDate = new Date(settings.endDate);
-                
+
                 // Determine status
                 let status = 'upcoming';
                 if (!settings.isActive) {
@@ -74,30 +73,30 @@ const UpcomingElection = () => {
         const durationMs = end - start;
         const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
         const hours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        
+
         let durationStr = '';
         if (days > 0) durationStr += `${days} day${days > 1 ? 's' : ''}`;
         if (hours > 0) durationStr += `${durationStr ? ', ' : ''}${hours} hour${hours > 1 ? 's' : ''}`;
-        
+
         return durationStr || 'Less than 1 hour';
     };
 
     // Fetch voting settings on mount and refresh periodically
     useEffect(() => {
         fetchElections();
-        
+
         // Refresh status every minute for real-time updates
         const interval = setInterval(() => {
             fetchElections();
         }, 60000); // Update every minute
-        
+
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only run on mount
 
     const handleStartStop = async (id) => {
         if (updating) return;
-        
+
         setUpdating(true);
         try {
             const currentElection = elections.find(e => e.id === id);
@@ -106,14 +105,14 @@ const UpcomingElection = () => {
             // Toggle the isActive status
             const newIsActive = !currentElection.isActive;
 
-            const response = await axios.post(`${BASE_URL}/api/votingSettings`, {
+            const response = await api.post(`/api/voting/settings`, {
                 isActive: newIsActive,
             });
 
             if (response.data.success) {
                 toast.success(
-                    newIsActive 
-                        ? 'Voting has been ENABLED' 
+                    newIsActive
+                        ? 'Voting has been ENABLED'
                         : 'Voting has been DISABLED'
                 );
                 // Refresh election data
@@ -212,11 +211,11 @@ const UpcomingElection = () => {
                     );
                 }
                 return (
-                    <Button 
-                        variant="contained" 
+                    <Button
+                        variant="contained"
                         disabled={updating}
-                        sx={{ 
-                            backgroundColor: isActive ? colors.redAccent[600] : colors.greenAccent[600], 
+                        sx={{
+                            backgroundColor: isActive ? colors.redAccent[600] : colors.greenAccent[600],
                             color: 'white',
                             '&:hover': {
                                 backgroundColor: isActive ? colors.redAccent[700] : colors.greenAccent[700],
@@ -244,7 +243,7 @@ const UpcomingElection = () => {
                         <Topbar />
                         <Box m="0px 20px">
                             <Header title="UPCOMING ELECTIONS / CURRENT ELECTIONS" subtitle="Managing the Elections" />
-                            
+
                             {loading ? (
                                 <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
                                     <CircularProgress />
@@ -283,9 +282,9 @@ const UpcomingElection = () => {
                                         },
                                     }}
                                 >
-                                    <DataGrid 
-                                        rows={elections} 
-                                        columns={columns} 
+                                    <DataGrid
+                                        rows={elections}
+                                        columns={columns}
                                         getRowId={(row) => row.id}
                                         disableSelectionOnClick
                                         autoHeight={false}

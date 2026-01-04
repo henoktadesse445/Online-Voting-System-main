@@ -113,10 +113,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // 🚀 Performance Optimization: Add indexes for frequently queried fields
-userSchema.index({ email: 1 }); // Index for email lookups
-userSchema.index({ voterId: 1 }); // Index for student ID lookups
 userSchema.index({ role: 1, approvalStatus: 1 }); // Compound index for role-based queries
 userSchema.index({ voteStatus: 1 }); // Index for vote status checks
-userSchema.index({ voteId: 1 }); // Index for Vote ID lookups
 
 module.exports = mongoose.model("User", userSchema);

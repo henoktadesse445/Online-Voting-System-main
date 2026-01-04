@@ -1,6 +1,6 @@
 import { useState, useEffect, React, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import UserNavbar from "../Navbar/UserNavbar";
 import {
   Container,
@@ -14,7 +14,6 @@ import {
 import UserCard from './Components/UserCard/userCard'
 import UpcomingElections from './Components/UpcomingElections';
 import ScrollReveal from "scrollreveal";
-import { BASE_URL } from '../../helper';
 import Cookies from 'js-cookie';
 
 const User = () => {
@@ -80,7 +79,7 @@ const User = () => {
       return;
     }
 
-    axios.get(`${BASE_URL}/getVoterbyID/${voterid}`)
+    api.get(`/api/voters/${voterid}`)
       .then((response) => {
 
         if (response.data.success) {

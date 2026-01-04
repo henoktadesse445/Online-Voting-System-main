@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Button, Switch, FormControlLabel, Alert, Paper, IconButton, useTheme } from "@mui/material";
 import { tokens } from "../../theme";
 import Header from "../../newComponents/Header";
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -54,7 +53,7 @@ const VotingSettings = () => {
 
     const fetchSettings = async () => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/votingSettings`);
+            const response = await api.get(`/api/voting/settings`);
             if (response.data.success) {
                 const s = response.data.settings;
                 // Format dates for datetime-local input using LOCAL time
@@ -81,7 +80,7 @@ const VotingSettings = () => {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             const adminId = currentUser?._id;
 
-            const response = await axios.post(`${BASE_URL}/api/votingSettings`, {
+            const response = await api.post(`/api/voting/settings`, {
                 startDate: settings.startDate,
                 endDate: settings.endDate,
                 isActive: settings.isActive,
@@ -317,7 +316,7 @@ const VotingSettings = () => {
 
                             setSaving(true);
                             try {
-                                const response = await axios.post(`${BASE_URL}/api/votingSettings`, {
+                                const response = await api.post(`/api/voting/settings`, {
                                     startDate: startDateString,
                                     endDate: endDateString,
                                     isActive: true,
@@ -352,7 +351,7 @@ const VotingSettings = () => {
                         startIcon={<PlayArrowIcon />}
                         onClick={async () => {
                             try {
-                                const response = await axios.post(`${BASE_URL}/api/votingSettings`, {
+                                const response = await api.post(`/api/voting/settings`, {
                                     isActive: true,
                                     skipAutoReset: true, // Only toggle status, don't reset data
                                 });
@@ -386,7 +385,7 @@ const VotingSettings = () => {
                         startIcon={<StopIcon />}
                         onClick={async () => {
                             try {
-                                const response = await axios.post(`${BASE_URL}/api/votingSettings`, {
+                                const response = await api.post(`/api/voting/settings`, {
                                     isActive: false,
                                     skipAutoReset: true, // Only toggle status, don't reset data
                                 });

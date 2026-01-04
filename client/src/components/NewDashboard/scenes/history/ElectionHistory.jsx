@@ -3,8 +3,7 @@ import { Box, Typography, Paper, Accordion, AccordionSummary, AccordionDetails, 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { tokens } from "../../theme";
 import Header from "../../newComponents/Header";
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 import { toast } from 'react-toastify';
 import HistoryIcon from '@mui/icons-material/History';
 
@@ -20,7 +19,7 @@ const ElectionHistory = () => {
 
     const fetchHistory = async () => {
         try {
-            const response = await axios.get(`${BASE_URL}/api/admin/election-history`);
+            const response = await api.get(`/api/admin/election-history`);
             if (response.data.success) {
                 setHistory(response.data.history);
             }

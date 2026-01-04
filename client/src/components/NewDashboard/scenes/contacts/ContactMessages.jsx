@@ -17,7 +17,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
 import Header from "../../newComponents/Header";
-import axios from 'axios';
+import api from '../../../../api';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ReplyIcon from '@mui/icons-material/Reply';
@@ -47,7 +47,7 @@ const ContactMessages = () => {
 
     const fetchContacts = async () => {
         try {
-            const response = await axios.get('/contacts');
+            const response = await api.get('/api/messages/contacts');
             if (response.data.success) {
                 setContacts(response.data.contacts);
             } else {
@@ -81,7 +81,7 @@ const ContactMessages = () => {
 
         setSending(true);
         try {
-            const response = await axios.post(`/contact/reply/${selectedContact._id}`, {
+            const response = await api.post(`/api/messages/reply/${selectedContact._id}`, {
                 replyMessage: replyMessage.trim()
             });
 
@@ -112,7 +112,7 @@ const ContactMessages = () => {
 
     const handleStatusChange = async (contactId, newStatus) => {
         try {
-            const response = await axios.patch(`/contact/status/${contactId}`, {
+            const response = await api.patch(`/api/messages/status/${contactId}`, {
                 status: newStatus
             });
 
@@ -137,7 +137,7 @@ const ContactMessages = () => {
         if (!contactToDelete) return;
 
         try {
-            const response = await axios.delete(`/contact/${contactToDelete._id}`);
+            const response = await api.delete(`/api/messages/${contactToDelete._id}`);
 
             if (response.data.success) {
                 toast.success('Message deleted successfully');

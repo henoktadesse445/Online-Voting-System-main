@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import UserNavbar from "../../../Navbar/UserNavbar";
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -68,7 +67,7 @@ const EditProfile = () => {
             return;
         }
 
-        axios.get(`${BASE_URL}/getVoterbyID/${voterId}`)
+        api.get(`/api/voters/${voterId}`)
             .then((response) => {
                 if (response.data.success && response.data.voter) {
                     const voter = response.data.voter;
@@ -185,10 +184,10 @@ const EditProfile = () => {
             }
 
             const endpoint = isCandidate
-                ? `${BASE_URL}/updateCandidate/${voterId}`
-                : `${BASE_URL}/updateVoter/${voterId}`;
+                ? `/api/candidates/update/${voterId}`
+                : `/api/voters/${voterId}`;
 
-            const response = await axios.patch(endpoint, updateData);
+            const response = await api.patch(endpoint, updateData);
 
             if (response.data.success) {
                 toast.success('Profile updated successfully!');

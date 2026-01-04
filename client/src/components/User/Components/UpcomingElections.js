@@ -10,7 +10,7 @@ import {
   Grid,
   useTheme
 } from '@mui/material';
-import { tokens } from '../../../components/NewDashboard/theme';
+import { tokens } from '../../NewDashboard/theme';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 
 // import "../CSS/upcomingElections.css" // Removing custom CSS

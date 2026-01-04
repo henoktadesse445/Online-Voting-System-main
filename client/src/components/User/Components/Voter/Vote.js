@@ -2,7 +2,7 @@ import './Vote.css';
 import UserNavbar from '../../../Navbar/UserNavbar';
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../../../api';
 import ScrollReveal from "scrollreveal";
 import Backdrop from '@mui/material/Backdrop';
 import Box from '@mui/material/Box';
@@ -88,7 +88,7 @@ export default function CustomizedTables() {
 
     useEffect(() => {
         // Fetch all candidates
-        axios.get(`${BASE_URL}/getCandidate`)
+        api.get(`/api/candidates/all`)
             .then((response) => {
                 const sorted = response.data.candidate.sort((a, b) => (b.votes || 0) - (a.votes || 0));
                 setCandidate(sorted);
@@ -107,7 +107,7 @@ export default function CustomizedTables() {
             return;
         }
 
-        axios.get(`${BASE_URL}/getVoterbyID/${voterid}`)
+        api.get(`/api/voters/${voterid}`)
             .then((response) => {
                 if (response.data.success) {
                     setVoter(response.data.voter);
@@ -120,7 +120,7 @@ export default function CustomizedTables() {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const response = await axios.get(`${BASE_URL}/api/votingSettings`);
+                const response = await api.get(`/api/voting/settings`);
                 if (response.data.success) {
                     setVotingSettings(response.data.settings);
                 }
@@ -193,7 +193,7 @@ export default function CustomizedTables() {
 
         setOtpLoading(true);
         try {
-            const otpResponse = await axios.post(`${BASE_URL}/api/requestOTP`, { voterId: voter._id || voterid });
+            const otpResponse = await api.post(`/api/voting/request-otp`, { voterId: voter._id || voterid });
             if (otpResponse.data.success) {
                 setOtpRequested(true);
                 setOtpMessage('OTP sent to your email. Valid for 10 minutes.');
@@ -211,7 +211,7 @@ export default function CustomizedTables() {
         if (!otpCode || otpCode.length !== 6) return;
         setOtpLoading(true);
         try {
-            const response = await axios.post(`${BASE_URL}/vote`, {
+            const response = await api.post(`/api/voting/vote`, {
                 candidateId: selectedCandidateId,
                 voterId: voter._id || voterid,
                 otpCode: otpCode,

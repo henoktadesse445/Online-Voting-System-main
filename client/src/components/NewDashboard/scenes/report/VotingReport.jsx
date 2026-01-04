@@ -1,9 +1,8 @@
-import { Box, Button, Typography, useTheme, Card, CardContent, Grid, CircularProgress } from "@mui/material";
+import { Box, Button, Typography, useTheme, Card, CardContent, Grid } from "@mui/material";
 import { tokens } from "../../theme";
 import Header from "../../newComponents/Header";
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { BASE_URL } from "../../../../helper";
+import api from "../../../../api";
 import { DataGrid } from "@mui/x-data-grid";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
@@ -27,7 +26,7 @@ const VotingReport = () => {
   const fetchReport = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/votingReport`);
+      const response = await api.get(`/api/admin/voting-report`);
       if (response.data.success) {
         setReportData(response.data.report);
       } else {
@@ -46,6 +45,12 @@ const VotingReport = () => {
 
     // Create a printable version
     const printWindow = window.open('', '_blank');
+
+    if (!printWindow) {
+      alert("Please allow popups for this site to download the PDF report.");
+      return;
+    }
+
     const reportHTML = generateReportHTML();
 
     printWindow.document.write(reportHTML);
@@ -61,7 +66,12 @@ const VotingReport = () => {
   const generateReportHTML = () => {
     if (!reportData) return '';
 
-    const { summary, candidateResults, voteDetails, positionBreakdown, statistics } = reportData;
+    const {
+      summary = {},
+      candidateResults = [],
+      voteDetails = [],
+      statistics = {}
+    } = reportData || {};
 
     return `
       <!DOCTYPE html>
@@ -215,8 +225,8 @@ const VotingReport = () => {
         </table>
 
         <div class="footer">
-          <p>Report Generated: ${new Date(summary.reportGeneratedAt).toLocaleString()}</p>
-          <p>Election Date: ${new Date(summary.electionDate).toLocaleDateString()}</p>
+          <p>Report Generated: ${summary.reportGeneratedAt ? new Date(summary.reportGeneratedAt).toLocaleString() : new Date().toLocaleString()}</p>
+          <p>Election Date: ${summary.electionDate ? new Date(summary.electionDate).toLocaleDateString() : 'N/A'}</p>
           <p>Wachemo University Online Voting System</p>
         </div>
       </body>
@@ -272,11 +282,16 @@ const VotingReport = () => {
     );
   }
 
-  const { summary, candidateResults, voteDetails, statistics } = reportData;
+  const {
+    summary = {},
+    candidateResults = [],
+    voteDetails = [],
+    statistics = {}
+  } = reportData || {};
 
   // Prepare data for DataGrid
   const candidateRows = candidateResults.map((candidate, index) => ({
-    id: candidate.id,
+    id: candidate.id || candidate._id || `cand-${index}`,
     rank: index + 1,
     name: candidate.name,
     studentId: candidate.studentId,
@@ -291,7 +306,7 @@ const VotingReport = () => {
     voteId: vote.voteId,
     candidateName: vote.candidateName,
     position: vote.position,
-    timestamp: new Date(vote.timestamp).toLocaleString(),
+    timestamp: vote.timestamp ? new Date(vote.timestamp).toLocaleString() : "N/A",
   }));
 
   return (
@@ -511,12 +526,12 @@ const VotingReport = () => {
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color={colors.grey[100]}>
-                <strong>Report Generated:</strong> {new Date(summary.reportGeneratedAt).toLocaleString()}
+                <strong>Report Generated:</strong> {summary.reportGeneratedAt ? new Date(summary.reportGeneratedAt).toLocaleString() : new Date().toLocaleString()}
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color={colors.grey[100]}>
-                <strong>Election Date:</strong> {new Date(summary.electionDate).toLocaleDateString()}
+                <strong>Election Date:</strong> {summary.electionDate ? new Date(summary.electionDate).toLocaleDateString() : 'N/A'}
               </Typography>
             </Grid>
             <Grid item xs={12}>

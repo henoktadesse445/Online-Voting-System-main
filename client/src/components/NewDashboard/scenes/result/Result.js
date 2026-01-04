@@ -5,8 +5,7 @@ import Header from "../../newComponents/Header";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { BASE_URL } from '../../../../helper';
+import api from '../../../../api';
 
 const Result = () => {
     const theme = useTheme();
@@ -25,7 +24,7 @@ const Result = () => {
 
     const fetchCandidates = async () => {
         try {
-            const response = await axios.get(`${BASE_URL}/getCandidate`);
+            const response = await api.get(`/api/candidates/all`);
             if (response.data.candidate) {
                 const sorted = [...response.data.candidate].sort((a, b) => (b.votes || 0) - (a.votes || 0));
                 setCandidates(sorted);
