@@ -3,7 +3,7 @@
    ============================================ */
 
 .Nav {
-    padding: var(--space-md) 0;
+    padding: var(--space-md) var(--space-lg);
     min-height: 70px;
     width: 100%;
     font-size: var(--font-size-base);
@@ -13,16 +13,26 @@
     border-bottom: 1px solid var(--border-color);
     transition: all var(--transition-slow);
     font-family: var(--font-primary);
+    z-index: 1030;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    /* Default Bootstrap sticky-top */
+}
+
+.Nav.sidebar-open {
+    z-index: 2005 !important;
+    /* Higher than backdrop (2000) */
 }
 
 .Nav.scrolled {
-    padding: 12px 0;
+    padding: 10px var(--space-lg);
     min-height: 65px;
     box-shadow: var(--shadow-md);
 }
 
 .Heading {
-    padding: var(--space-sm) var(--space-lg);
+    padding: 0 !important;
     font-weight: var(--font-weight-extrabold);
     font-size: var(--font-size-xl);
     color: var(--color-primary) !important;
@@ -32,6 +42,11 @@
 
 .Heading:hover {
     filter: brightness(1.1);
+}
+
+/* Ensure the navbar-brand is not taking too much space in flex */
+.navbar-brand {
+    margin-right: 0 !important;
 }
 
 .Nav-items {
@@ -71,35 +86,16 @@
     color: var(--color-primary) !important;
 }
 
-/* Dropdown Customization */
-.dropdown-menu {
-    background-color: var(--bg-surface);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    margin-top: var(--space-sm) !important;
-    padding: var(--space-sm);
-}
-
-.dropdown-item {
-    color: var(--text-primary) !important;
-    padding: 10px var(--space-md);
-    border-radius: var(--radius-md);
-    font-weight: var(--font-weight-medium);
-    transition: all var(--transition-base);
-}
-
-.dropdown-item:hover {
-    background-color: var(--color-primary);
-    color: white !important;
-}
-
 /* Toggle Customization */
 .Toggle {
     border: none !important;
-    padding: var(--space-sm) !important;
+    padding: var(--space-sm) 0 !important;
     transition: all var(--transition-base);
+    outline: none !important;
+    box-shadow: none !important;
+    margin-right: 0 !important;
+    margin-left: auto !important;
+    /* Forces it to the right */
 }
 
 .Toggle:focus {
@@ -142,69 +138,148 @@ body.light-mode .navbar-toggler-icon {
     box-shadow: 0 4px 12px var(--button-shadow);
 }
 
-/* Responsive Fixes */
+/* ============================================
+   RESPONSIVE SIDEBAR & MOBILE STYLES
+   ============================================ */
+
+/* Backdrop Overlay */
+.navbar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 2000;
+    transition: all 0.4s ease-in-out;
+}
+
 @media (max-width: 991.98px) {
     .navbar-collapse {
+        position: fixed;
+        top: 0;
+        left: -300px;
+        /* Hidden off-screen to the left */
+        width: 300px;
+        height: 100vh;
+        background: var(--bg-surface) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: 10px 0 40px rgba(0, 0, 0, 0.3);
+        padding: var(--space-lg);
+        display: flex !important;
+        flex-direction: column;
+        transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 2010;
+        /* Above everything */
+        border-right: 1px solid var(--border-color);
+        border-left: none;
+        margin: 0 !important;
+        visibility: hidden;
+    }
+
+    /* Support for Light Mode Sidebar */
+    body.light-mode .navbar-collapse {
         background: var(--bg-surface);
-        margin: var(--space-md) calc(-1 * var(--space-md)) calc(-0.75 * var(--space-md));
-        padding: var(--space-md);
-        border-radius: 0 0 var(--radius-md) var(--radius-md);
-        border-top: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        border-left: none;
+    }
+
+    .navbar-collapse.show {
+        left: 0;
+        /* Slide in from left */
+        visibility: visible;
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-xl);
+        padding: var(--space-md) 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-title {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-bold);
+        color: var(--color-primary);
+    }
+
+    .navbar-nav {
+        width: 100%;
+        margin: 0 !important;
     }
 
     .Nav-items {
         margin: var(--space-xs) 0;
-    }
-
-    /* Stack buttons vertically on mobile */
-    .navbar-nav.ml-auto {
-        margin-top: var(--space-md);
-        padding-top: var(--space-md);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .navbar-nav.ml-auto .btn {
+        padding: 16px var(--space-md) !important;
         width: 100%;
-        margin: var(--space-sm) 0 !important;
+        text-align: left;
+        font-size: 1.1rem;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+    }
+
+    .nav-icon {
+        font-size: 1.25rem;
+        color: var(--color-primary);
+        opacity: 0.8;
+    }
+
+    .Nav-items:after {
+        display: none;
+        /* Hide the underline on mobile */
+    }
+
+    .Nav-items:hover,
+    .Nav-items.active {
+        background-color: rgba(104, 112, 250, 0.1);
+        color: var(--color-primary) !important;
+    }
+
+    /* Action buttons in sidebar */
+    .menu-actions {
+        margin-top: auto;
+        padding: var(--space-lg) 0;
+        border-top: 1px solid var(--border-color);
+        width: 100%;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: var(--space-md) !important;
+    }
+
+    .LoginButton {
+        flex: 1;
+        width: 100%;
+        text-align: center;
     }
 }
 
 @media (max-width: 768px) {
     .Nav {
-        padding: 12px 0;
+        padding: 10px var(--space-md);
         min-height: 60px;
     }
 
     .Heading {
         font-size: var(--font-size-lg);
-        padding: var(--space-sm) var(--space-md);
-    }
-
-    .Nav-items {
-        font-size: var(--font-size-sm);
-        padding: 10px var(--space-md) !important;
-    }
-
-    /* Improve dropdown on mobile */
-    .dropdown-menu {
-        width: 100%;
-        margin-top: var(--space-xs) !important;
     }
 }
 
 @media (max-width: 480px) {
+    .navbar-collapse {
+        width: 85%;
+    }
+
     .Heading {
         font-size: var(--font-size-md);
-        padding: var(--space-xs) 12px;
-    }
-
-    .Nav-items {
-        font-size: var(--font-size-xs);
-        padding: var(--space-sm) 12px !important;
-    }
-
-    .ThemeToggleButton {
-        width: 36px;
-        height: 36px;
     }
 }

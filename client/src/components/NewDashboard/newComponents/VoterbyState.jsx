@@ -36,7 +36,6 @@ const VoterbyState = () => {
                 const groupedData = groupVotersByState(voterData);
                 setStateData(groupedData);
             } catch (err) {
-                console.log("Error Fetching Data", err);
             }
         };
 

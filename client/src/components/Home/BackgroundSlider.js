@@ -6,7 +6,7 @@ const BackgroundSlider = () => {
     return (
         <div className="background-slider">
             <div className="sliding-image">
-                <img src={require(`./Images/voting-hero.jpg`)} alt="voting background" className="background-image" />
+                <img src={require(`./Images/modern-voting-hero.png`)} alt="voting background" className="background-image" />
             </div>
             <div className="content">
             </div>

@@ -1,21 +1,17 @@
 .Home {
-    padding: 0rem;
+    width: 100%;
+    min-height: 100vh;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
 }
 
 .Home-content {
-    border-radius: 0.1rem;
-    margin: 0rem auto;
-    padding: 0rem;
-    background-color: var(--bg-primary);
     width: 100%;
-}
-
-.light-mode .About-Content .textAbout p {
-    color: #222;
+    display: flex;
+    flex-direction: column;
+    /* Ensure no unexpected margins break the layout */
+    margin: 0;
+    padding: 0;
 }

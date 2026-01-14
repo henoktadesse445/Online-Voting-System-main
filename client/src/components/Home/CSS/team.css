@@ -1,132 +1,58 @@
 .Team {
-    margin: 2rem auto;
+    padding: var(--space-3xl) var(--space-lg);
+    background-color: var(--bg-surface);
 }
 
 .Team h2 {
-    margin: 1rem auto;
-    margin-top: 2rem;
-    justify-content: center;
     text-align: center;
-    color: var(--accent-color);
+    margin-bottom: var(--space-xxl);
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-extrabold);
+    color: var(--text-primary);
 }
 
-.Team .Team-Content {
-    padding: 1rem;
+.Team-Content {
     display: flex;
-    justify-content: center;
-    align-items: center;
     flex-wrap: wrap;
-    max-width: 1400px;
+    justify-content: center;
+    gap: var(--space-xxl);
+    max-width: 1280px;
     margin: 0 auto;
 }
 
-.Team .Team-Content .Team-Content-Card {
-    /* border: 1px solid red; */
-    border-radius: 50%;
-    background-color: var(--bg-card);
-    color: var(--text-primary);
-    width: 250px;
-    height: 250px;
-    margin: 1.5rem;
-    padding: 2rem 1.5rem;
+.Team-Content-Card {
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    width: 260px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    text-align: center;
 }
 
-.Team .Team-Content .Team-Content-Card h3 {
-    color: var(--accent-color);
-    font-size: 0.9rem;
+.Team-Content-Card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--color-primary);
 }
 
-.Team .Team-Content .Team-Content-Card h5 {
-    font-size: 0.9rem;
-}
-
-.Team .Team-Content .Team-Content-Card p {
-    text-align: justify;
-    font-size: 0.7rem;
-}
-
-.Team .Team-Content .Team-Content-Card .SocialIcon {
-    margin: 0.2rem 0.5rem;
-    /* border: 1px solid red; */
-    font-size: 0.2rem;
-    size: 1px;
-    width: 20;
-    height: 20;
-}
-
-.Team .Team-Content .Team-Content-Card .image {
-    border: 4px solid var(--accent-color);
+.Team-Content-Card .image {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    width: 150px;
-    height: 150px;
-    min-width: 150px;
-    /* Prevent shrinking */
-    min-height: 150px;
-    /* Prevent shrinking/growing */
-    margin: 1rem auto;
-    display: block;
     object-fit: cover;
-    box-shadow: 0 4px 8px rgba(137, 196, 238, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 3px solid var(--color-primary);
+    margin-bottom: var(--space-md);
+    box-shadow: var(--shadow-md);
 }
 
-.Team .Team-Content .Team-Content-Card .image:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(137, 196, 238, 0.5);
-}
-
-@media (max-width:1024px) {
-    .Team .Team-Content {
-        padding: 1rem;
-        max-width: 900px;
-    }
-
-    .Team .Team-Content .Team-Content-Card {
-        /* border: 1px solid red; */
-        border-radius: 50%;
-        background-color: var(--bg-card);
-        color: var(--text-primary);
-        width: 220px;
-        height: 220px;
-        min-width: 220px;
-        margin: 1rem;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-    }
-}
-
-@media (max-width:560px) {
-    .Team .Team-Content {
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .Team .Team-Content .Team-Content-Card {
-        /* border: 1px solid red; */
-        border-radius: 50%;
-        background-color: var(--bg-card);
-        color: var(--text-primary);
-        width: 250px;
-        height: 250px;
-        max-width: 250px;
-        margin: 1rem auto;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-    }
+.Team-Content-Card h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin: 0;
 }

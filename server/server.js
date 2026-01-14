@@ -7,7 +7,6 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const routes = require("./routes");
-const legacyRoutes = require("./routes/legacyRoutes");
 
 const app = express();
 
@@ -38,7 +37,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
 
 // API Routes
 app.use("/api", routes);
-app.use("/", legacyRoutes); // Support old frontend paths
 
 // Base route
 app.get("/", (req, res) => {
@@ -53,7 +51,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    const duration = (Date.now() - startTime) / 1000;
     console.log(`✅ Server running on port ${PORT}`);
-    console.log(`🚀 Startup time: ${duration.toFixed(3)}s`);
 });

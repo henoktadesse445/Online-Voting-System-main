@@ -83,7 +83,6 @@ const AddCandidate = () => {
         }
         catch (error) {
             CreationFailed();
-            console.error(error);
         }
         finally {
             setLoading(false);

@@ -1,6 +1,5 @@
 import "./SignUtils/CSS/Sign.css"
 import "./SignUtils/CSS/style.css.map"
-// import "./SignUtils/fonts/material-icon/css/material-design-iconic-font.min.css"
 import signinimage from "./SignUtils/images/signin-image.jpg"
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -94,7 +93,6 @@ const Login = () => {
                 loginFailed(response.data.message);
             }
         } catch (error) {
-            console.error('Login failed:', error);
             loginFailed(error.response?.data?.message || "Error during login");
         } finally {
             setLoading(false);
@@ -160,7 +158,6 @@ const Login = () => {
                 });
             }
         } catch (error) {
-            console.error('Password change failed:', error);
             toast.error(error.response?.data?.message || "Error setting password", {
                 className: "toast-message",
             });
@@ -204,7 +201,6 @@ const Login = () => {
                 });
             }
         } catch (error) {
-            console.error('Request password reset failed:', error);
             toast.error(error.response?.data?.message || "Error requesting password reset", {
                 className: "toast-message",
             });
@@ -242,7 +238,6 @@ const Login = () => {
                 });
             }
         } catch (error) {
-            console.error('Verify reset OTP failed:', error);
             toast.error(error.response?.data?.message || "Error verifying OTP", {
                 className: "toast-message",
             });
@@ -306,7 +301,6 @@ const Login = () => {
                 });
             }
         } catch (error) {
-            console.error('Reset password failed:', error);
             toast.error(error.response?.data?.message || "Error resetting password", {
                 className: "toast-message",
             });
@@ -349,7 +343,6 @@ const Login = () => {
                 });
             }
         } catch (error) {
-            console.error('Resend OTP failed:', error);
             toast.error(error.response?.data?.message || "Error resending OTP. Please try again later.", {
                 className: "toast-message",
             });

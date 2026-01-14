@@ -53,7 +53,6 @@ const VoterbyAge = () => {
         const groupedData = groupVotersByAge(voterData);
         setAgeGroupData(groupedData);
       } catch (err) {
-        console.log("Error Fetching Data", err);
       }
     };
 

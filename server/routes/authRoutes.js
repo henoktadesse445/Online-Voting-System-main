@@ -11,6 +11,9 @@ router.post("/adminlogin", authController.adminLogin);
 router.post("/request-reset", authController.requestPasswordReset);
 router.post("/verify-reset-otp", authController.verifyResetOTP);
 router.post("/reset-password", authController.resetPassword);
+
+// Resend OTP - support both route formats for compatibility
 router.post("/resend-otp", authController.resendOTP);
+router.post("/resendOTP", authController.resendOTP);
 
 module.exports = router;
